@@ -4,6 +4,7 @@ import { Skeleton } from "@deriv-com/quill-ui"
 
 const ProtectedRoute = ({ children }) => {
     const { defaultAccount, isLoading } = useAuth()
+    console.log('this is amayas login  , defaultacount' , defaultAccount)
 
     console.log('ProtectedRoute - defaultAccount:', defaultAccount)
     console.log('ProtectedRoute - isLoading:', isLoading)

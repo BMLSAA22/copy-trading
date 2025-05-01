@@ -34,6 +34,7 @@ export const useAuthState = () => {
                 );
                 setDefaultAccount(JSON.parse(storedDefault));
             }
+            
             if (storedOthers) {
                 setOtherAccounts(JSON.parse(storedOthers));
             }

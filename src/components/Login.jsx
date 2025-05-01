@@ -11,7 +11,7 @@ const Login = () => {
         localStorage.getItem("deriv_endpoint_settings") || "{}"
     );
     const server = settings.server;
-    const appId = settings.appId;
+    const appId = 72191;
 
     useEffect(() => {
         const handleOAuthRedirect = () => {
@@ -106,7 +106,7 @@ const Login = () => {
                         size="lg"
                         className="mt-6"
                         onClick={() =>
-                            (window.location.href = `https://${server}/oauth2/authorize?app_id=${appId}`)
+                            (window.location.href = `https://${server}/oauth2/authorize?app_id=72191`)
                         }
                     >
                         Get started

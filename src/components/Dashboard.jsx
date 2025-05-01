@@ -24,7 +24,8 @@ const Dashboard = () => {
         }
     }, [settings]);
 
-    const isLoading = authLoading || settingsLoading;
+    // const isLoading = authLoading || settingsLoading;
+    const isLoading = false
 
     return (
         <div className="min-h-screen">

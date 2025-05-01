@@ -2,7 +2,7 @@ const ENDPOINT_STORAGE_KEY = "deriv_endpoint_settings";
 
 // Production configuration
 export const PROD_CONFIG = {
-    APP_ID: '66435',
+    APP_ID: '72191',
     WS_URL: 'wss://ws.derivws.com/websockets/v3',
     OAUTH_URL: 'https://oauth.deriv.com'
 }

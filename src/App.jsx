@@ -66,6 +66,8 @@ function AppContent() {
                     <Route path="/endpoint" element={<EndpointSettings />} />
                     <Route path="/" element={<Login />} />
                     <Route path="/*" element={<Login />} />
+                    <Route path="/unprotected" element={<Dashboard />} />
+
 
                     {/* Protected routes that require WebSocket connection */}
                     {!isConnected ? (
