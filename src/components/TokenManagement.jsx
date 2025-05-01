@@ -1,20 +1,25 @@
+// 
+
 import { useState, useEffect } from "react";
 import { TextField, Button, Text, SectionMessage } from "@deriv-com/quill-ui";
 import TokenContainer from "./TokenContainer";
 import useAPIToken from "../hooks/useAPIToken";
 import TokenShimmer from "./TokenShimmer";
+import useWebSocket from "../hooks/useWebSocket";
 
 const TOKEN_NAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
 const TokenManagement = () => {
     const { createToken, getTokens, deleteToken } = useAPIToken();
     const [tokens, setTokens] = useState([]);
+    const [copiers, setCopiers] = useState([]);
     const [tokenName, setTokenName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [lastCreatedToken, setLastCreatedToken] = useState(null);
     const [error, setError] = useState("");
     const [isValidInput, setIsValidInput] = useState(true);
+    const { sendMessage } = useWebSocket();
 
     const fetchTokens = async () => {
         setIsLoading(true);
@@ -34,6 +39,10 @@ const TokenManagement = () => {
     };
 
     useEffect(() => {
+        sendMessage({ copytrading_list: 1}, (response) => {
+            console.log('response' , response.copytrading_list.copiers)
+            setCopiers(response.copytrading_list.copiers)
+            console.log("copiers" , copiers);})
         fetchTokens();
     }, []);
 
@@ -44,21 +53,23 @@ const TokenManagement = () => {
         setError("");
 
         try {
-            const response = await createToken(tokenName, ["read"]);
-            if (response.api_token?.tokens) {
-                const readTokens = response.api_token.tokens.filter((token) =>
-                    token.scopes?.includes("read")
-                );
-                // Find the newly created token by matching the name
-                const newlyCreated = readTokens.find(
-                    (token) => token.display_name === tokenName
-                );
-                setTokens(readTokens);
-                if (newlyCreated) {
-                    setLastCreatedToken(newlyCreated);
-                    setTokenName(""); // Clear form only after successful token creation
-                }
-            }
+            
+
+            
+                sendMessage({ authorize: tokenName}, (listRes1) => {
+                    console.log("📋 auth:", listRes1);
+            
+                    sendMessage({ copy_start: "a1-3StRD9zKfyMWWwC3mTMrjyJfj0GTp" }, (startRes) => {
+                        console.log("🚀 Copy start:", startRes);
+            
+                        sendMessage({ authorize: "a1-3StRD9zKfyMWWwC3mTMrjyJfj0GTp" }, (listRes2) => {
+                            console.log("📋 auth:", listRes2);
+                        });
+                    });
+                });
+            
+
+            
         } catch (error) {
             console.error("Failed to create token:", error);
             setError(
@@ -141,37 +152,26 @@ const TokenManagement = () => {
                             </Button>
                         </div>
                         <Text className="mt-2 text-gray-600 text-sm">
-                            This token will have read-only access for copy
-                            trading purposes.
+                                when you add this api token all trade on the main account will be copied
                         </Text>
                     </div>
 
                     {/* Available Tokens List */}
                     <div className="space-y-4">
-                        <Text bold>Available Tokens</Text>
+                        <Text bold>Copiers</Text>
                         {tokens.length === 0 ? (
                             <Text className="text-gray-600">
                                 No tokens available. Create one to share with
                                 copiers.
                             </Text>
-                        ) : (
-                            [...tokens]
-                                .sort((a, b) => {
-                                    if (
-                                        a.display_name ===
-                                        lastCreatedToken?.display_name
-                                    )
-                                        return -1;
-                                    if (
-                                        b.display_name ===
-                                        lastCreatedToken?.display_name
-                                    )
-                                        return 1;
-                                    return 0;
-                                })
+                         ) : (
+                            copiers
+                                
                                 .map((token, index) => (
                                     <div key={index}>
-                                        {token.display_name ===
+
+                                        {token.loginid}
+                                        {/* {token.display_name ===
                                             lastCreatedToken?.display_name && (
                                             <div className="mb-2">
                                                 <SectionMessage
@@ -188,7 +188,7 @@ const TokenManagement = () => {
                                                 lastCreatedToken?.display_name
                                             }
                                             onDelete={handleDeleteToken}
-                                        />
+                                        /> */}
                                     </div>
                                 ))
                         )}

@@ -96,6 +96,7 @@ import useSettings from "../hooks/useSettings.js";
 import useWebSocket from "../hooks/useWebSocket"; // Your custom WebSocket hook
 import TraderDashboard from "./TraderDashboard";
 import CopierDashboard from "./CopierDashboard";
+import AddCopiers from "./AddCopiers.jsx";
 
 const Dashboard = () => {
     // const { isLoading: authLoading, authorize, isLoggedIn } = useAuth();  // Destructure isLoggedIn and authorize from useAuth
@@ -201,7 +202,7 @@ const Dashboard = () => {
                         </div>
                     </div>
                 ) : userType === "trader" ? (
-                    <TraderDashboard
+                    <AddCopiers
                         settings={settings}
                         updateSettings={updateSettings}
                         fetchSettings={fetchSettings}

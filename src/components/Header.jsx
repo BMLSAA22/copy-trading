@@ -4,13 +4,14 @@ import derivIcon from "../assets/deriv-icon.svg";
 import { useAuth } from "../hooks/useAuth.jsx";
 import useBalance from "../hooks/useBalance";
 import useLogout from "../hooks/useLogout";
+import { useEffect, useState } from "react";
+import useWebSocket from "../hooks/useWebSocket.js";
 
 const Header = () => {
 
     
-    // const { defaultAccount, otherAccounts, isAuthorized, isLoading } =
-    //     useAuth();
-
+    const { sendMessage } = useWebSocket();
+    const [account, setAccount] = useState(null);
     const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
     const balances = useBalance();
     const settings = JSON.parse(
@@ -33,6 +34,16 @@ const Header = () => {
         window.location.href = `https://${server}/oauth2/authorize?app_id=${appId}`;
     };
 
+        useEffect(() => {
+            if(isLoggedIn){
+            sendMessage({"balance":1} , (response)=>{
+                console.log('*/*/*/*/*/**/*/*/*/*/*/*' , response)
+                setAccount(response.balance)
+
+            })}
+           
+        }, [isLoggedIn]);
+
     return (
         <header className="sticky top-0 z-50 bg-white shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -45,7 +56,7 @@ const Header = () => {
                     </div>
 
                     <div className="flex items-center space-x-4">
-                        {authLoading ? (
+                        {!account ? (
                             <>
                                 <div className="w-40 h-8">
                                     <Skeleton.Square
@@ -64,14 +75,10 @@ const Header = () => {
                             </>
                         ) : (
                             <>
-                                {isLoggedIn ? (
-                                    // <AccountSelector
-                                    //     defaultAccount={defaultAccount}
-                                    //     otherAccounts={otherAccounts}
-                                    //     onLogout={handleLogout}
-                                    //     balances={balances}
-                                    // />
-                                    <p>hello world</p>
+                                {account!=null ? (
+                                    <AccountSelector
+                                        account={account}
+                                    />
                                 ) : (
                                     <Button
                                         variant="primary"

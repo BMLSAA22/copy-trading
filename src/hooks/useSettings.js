@@ -6,11 +6,12 @@ const useSettings = () => {
     const [settings, setSettings] = useState(null);
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    const { isAuthorized, isConnected } = useAuth();
+    const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
+    // const { isAuthorized, isConnected } = useAuth();
     const { sendMessage } = useWebSocket();
 
     const fetchSettings = useCallback(() => {
-        if (!isConnected || !isAuthorized) {
+        if (!isLoggedIn) {
             return Promise.reject(new Error('Not connected or authorized'));
         }
 
@@ -42,10 +43,10 @@ const useSettings = () => {
                 }
             );
         });
-    }, [isConnected, isAuthorized, sendMessage]);
+    }, [isLoggedIn, sendMessage]);
 
     const updateSettings = useCallback(async (newSettings) => {
-        if (!isConnected || !isAuthorized) {
+        if (!isLoggedIn) {
             throw new Error('Not connected or authorized');
         }
 
@@ -77,23 +78,23 @@ const useSettings = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [isConnected, isAuthorized, sendMessage, fetchSettings]);
+    }, [isLoggedIn, sendMessage, fetchSettings]);
 
     // Initial fetch on mount and when connection/auth changes
     useEffect(() => {
-        if (isConnected && isAuthorized) {
+        if (isLoggedIn) {
             fetchSettings();
         }
-    }, [isConnected, isAuthorized, fetchSettings]);
+    }, [isLoggedIn, fetchSettings]);
 
     // Reset state when connection is lost
     useEffect(() => {
-        if (!isConnected) {
+        if (!isLoggedIn) {
             setSettings(null);
             setError(null);
             setIsLoading(false);
         }
-    }, [isConnected]);
+    }, [isLoggedIn]);
 
     return {
         settings,

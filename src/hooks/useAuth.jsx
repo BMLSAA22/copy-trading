@@ -10,7 +10,7 @@ export const useAuthState = () => {
     const [defaultAccount, setDefaultAccount] = useState(null);
     const [otherAccounts, setOtherAccounts] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const { isConnected, sendMessage, close } = useWebSocket();
 
     // Load accounts from localStorage
@@ -21,7 +21,7 @@ export const useAuthState = () => {
 
             if (storedDefault) {
                 setDefaultAccount(JSON.parse(storedDefault));
-                isLoggedInGlobal = true
+                // isLoggedInGlobal = true
             }
 
             if (storedOthers) {

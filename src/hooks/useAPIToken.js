@@ -4,10 +4,10 @@ import { useAuth } from '../hooks/useAuth.jsx';
 
 const useAPIToken = () => {
     const { sendMessage } = useWebSocket();
-    const { isAuthorized } = useAuth();
+    const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
 
     const createToken = useCallback((tokenName, scopes = ['admin', 'read', 'trade']) => {
-        if (!isAuthorized) {
+        if (!isLoggedIn) {
             throw new Error('Client is not authorized');
         }
 
@@ -24,10 +24,10 @@ const useAPIToken = () => {
                 }
             });
         });
-    }, [sendMessage, isAuthorized]);
+    }, [sendMessage, isLoggedIn]);
 
     const getTokens = useCallback(() => {
-        if (!isAuthorized) {
+        if (!isLoggedIn) {
             throw new Error('Client is not authorized');
         }
 
@@ -42,10 +42,10 @@ const useAPIToken = () => {
                 }
             });
         });
-    }, [sendMessage, isAuthorized]);
+    }, [sendMessage, isLoggedIn]);
 
     const deleteToken = useCallback((token) => {
-        if (!isAuthorized) {
+        if (!isLoggedIn) {
             throw new Error('Client is not authorized');
         }
 
@@ -61,7 +61,7 @@ const useAPIToken = () => {
                 }
             });
         });
-    }, [sendMessage, isAuthorized]);
+    }, [sendMessage, isLoggedIn]);
 
     return {
         createToken,

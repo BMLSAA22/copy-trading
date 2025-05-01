@@ -4,11 +4,12 @@ import { useAuth } from "../hooks/useAuth.jsx";
 
 const useCopyStop = () => {
     const { sendMessage } = useWebSocket();
-    const { isAuthorized, isConnected } = useAuth();
+    // const { isAuthorized, isConnected } = useAuth();
+    const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
     const [processingTrader, setProcessingTrader] = useState(null);
 
     const stopCopyTrading = (trader, onSuccess, onError) => {
-        if (!isConnected || !isAuthorized) {
+        if (!isLoggedIn ) {
             onError("Connection not ready. Please try again.");
             return;
         }
