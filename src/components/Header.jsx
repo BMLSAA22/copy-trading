@@ -6,8 +6,12 @@ import useBalance from "../hooks/useBalance";
 import useLogout from "../hooks/useLogout";
 
 const Header = () => {
-    const { defaultAccount, otherAccounts, isAuthorized, isLoading } =
-        useAuth();
+
+    
+    // const { defaultAccount, otherAccounts, isAuthorized, isLoading } =
+    //     useAuth();
+
+    const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
     const balances = useBalance();
     const settings = JSON.parse(
         localStorage.getItem("deriv_endpoint_settings") || "{}"
@@ -41,7 +45,7 @@ const Header = () => {
                     </div>
 
                     <div className="flex items-center space-x-4">
-                        {isLoading ? (
+                        {authLoading ? (
                             <>
                                 <div className="w-40 h-8">
                                     <Skeleton.Square
@@ -60,13 +64,14 @@ const Header = () => {
                             </>
                         ) : (
                             <>
-                                {isAuthorized ? (
-                                    <AccountSelector
-                                        defaultAccount={defaultAccount}
-                                        otherAccounts={otherAccounts}
-                                        onLogout={handleLogout}
-                                        balances={balances}
-                                    />
+                                {isLoggedIn ? (
+                                    // <AccountSelector
+                                    //     defaultAccount={defaultAccount}
+                                    //     otherAccounts={otherAccounts}
+                                    //     onLogout={handleLogout}
+                                    //     balances={balances}
+                                    // />
+                                    <p>hello world</p>
                                 ) : (
                                     <Button
                                         variant="primary"

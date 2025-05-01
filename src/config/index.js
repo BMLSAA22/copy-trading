@@ -32,7 +32,7 @@ export const setEndpointSettings = (server, appId) => {
             console.error('Invalid endpoint settings:', { server, appId });
             return;
         }
-
+        
         console.log('Storing endpoint settings:', { server, appId });
         localStorage.setItem(
             ENDPOINT_STORAGE_KEY,

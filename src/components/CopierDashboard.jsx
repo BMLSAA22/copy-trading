@@ -42,6 +42,9 @@ const CopierDashboard = ({ settings, updateSettings, fetchSettings }) => {
     };
 
     const handleStartCopy = (trader) => {
+
+
+        console.log('we are here in start copying trader here')
         startCopyTrading(
             trader,
             (trader) => {
@@ -141,7 +144,7 @@ const CopierDashboard = ({ settings, updateSettings, fetchSettings }) => {
                     <div className="text-center py-8">No traders available</div>
                 ) : (
                     <div className="grid gap-6">
-                        {apiTraders.map((trader) => (
+                        {apiTraders?.map((trader) => (
                             <TraderCard
                                 key={trader.loginid}
                                 trader={trader}

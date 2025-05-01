@@ -59,9 +59,9 @@ const ProfitableTrades = ({ monthlyTrades, yearlyTrades }) => {
     );
 };
 
-ProfitableTrades.propTypes = {
-    monthlyTrades: PropTypes.objectOf(PropTypes.number).isRequired,
-    yearlyTrades: PropTypes.objectOf(PropTypes.number).isRequired,
-};
+// ProfitableTrades.propTypes = {
+//     monthlyTrades: PropTypes.objectOf(PropTypes.number).isRequired,
+//     yearlyTrades: PropTypes.objectOf(PropTypes.number).isRequired,
+// };
 
 export default ProfitableTrades;

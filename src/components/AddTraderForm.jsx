@@ -58,14 +58,14 @@ const AddTraderForm = ({ onAddTrader }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!isConnected || !isAuthorized) {
-            setSnackbar({
-                isVisible: true,
-                message: "Not connected to server",
-                status: "fail",
-            });
-            return;
-        }
+        // if (!isConnected || !isAuthorized) {
+        //     setSnackbar({
+        //         isVisible: true,
+        //         message: "Not connected to server",
+        //         status: "fail",
+        //     });
+        //     return;
+        // }
         const { maxStake, minStake } = traderData;
 
         if (minStake && maxStake && minStake > maxStake) {
@@ -149,6 +149,8 @@ const AddTraderForm = ({ onAddTrader }) => {
                                 >
                                     Start Copying
                                 </Button>
+
+
                             </div>
                             <div className="flex flex-col gap-2">
                                 <Text bold className="text-gray-600">

@@ -4,14 +4,23 @@ import { useAuth } from '../hooks/useAuth.jsx'
 
 const useCopyTradersList = () => {
     const { sendMessage, lastMessage } = useWebSocket()
-    const { isAuthorized, isConnected } = useAuth()
+    const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
     const [traders, setTraders] = useState([])
     const [copiers, setCopiers] = useState([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
 
     const fetchList = useCallback(() => {
-        if (!isConnected || !isAuthorized) return
+
+
+        // if (!isConnected ) {
+        //     console.log('here fetching list izzzzan')
+        //     return}
+
+
+
+        console.log('here fetching copy traders list')
+        
 
         sendMessage(
             {
@@ -24,6 +33,7 @@ const useCopyTradersList = () => {
                 console.log('Copy Trading List Response:', response)
 
                 if (response.error) {
+                    console.log('copy trading failed ')
                     setError(response.error.message)
                     setIsLoading(false)
                     return
@@ -37,14 +47,18 @@ const useCopyTradersList = () => {
                 }
             }
         )
-    }, [sendMessage, isConnected, isAuthorized])
+    }, [sendMessage, isLoggedIn , authLoading ])
 
     // Initial fetch when authorized and connected
     useEffect(() => {
-        if (isAuthorized && isConnected) {
+        console.log('come on fetch man')
+        console.log(isLoggedIn)
+        console.log(authLoading)
+        if (isLoggedIn ) {
+            console.log('entered here ')
             fetchList()
         }
-    }, [isAuthorized, isConnected, fetchList])
+    }, [isLoggedIn, authLoading, fetchList])
 
     // Handle broadcast messages
     useEffect(() => {

@@ -91,14 +91,15 @@
 import { useState, useEffect } from "react";
 import { SegmentedControlSingleChoice, Skeleton } from "@deriv-com/quill-ui";
 import { useLocation } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth.jsx";
+import { useAuth } from "../hooks/useAuth.jsx";  // Import the useAuth hook
 import useSettings from "../hooks/useSettings.js";
 import useWebSocket from "../hooks/useWebSocket"; // Your custom WebSocket hook
 import TraderDashboard from "./TraderDashboard";
 import CopierDashboard from "./CopierDashboard";
 
 const Dashboard = () => {
-    const { isLoading: authLoading } = useAuth();
+    // const { isLoading: authLoading, authorize, isLoggedIn } = useAuth();  // Destructure isLoggedIn and authorize from useAuth
+    const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
     const {
         settings,
         isLoading: settingsLoading,
@@ -106,9 +107,12 @@ const Dashboard = () => {
         fetchSettings,
     } = useSettings();
 
+
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
-    const token = searchParams.get("token");
+    const token = searchParams.get("token1");
+    const account = searchParams.get("acct1");
+    const currency = searchParams.get("curr1");
 
     const { isConnected, sendMessage } = useWebSocket();
     const [userType, setUserType] = useState("copier");
@@ -123,19 +127,34 @@ const Dashboard = () => {
     useEffect(() => {
         if (token && isConnected) {
             console.log("🔐 Sending authorize with token:", token);
-            sendMessage({ authorize: token }, (response) => {
-                console.log("✅ Authorization response:", response);
-            });
+
+            // Use the authorize function from useAuth to change the auth status globally
+            authorize(token)
+                .then((response) => {
+                    console.log("✅ Authorization response:", response);
+                    localStorage.setItem(
+                        "deriv_default_account",
+                        JSON.stringify({"token":token , "account":account , "currency":currency })
+                        
+                    );
+
+                    // console.log(response.authorize.account_list)
+                    // updateAccounts(response.authorize.account_list ,response.authorize.account_list.slice(0) )
+                    // console.log(response.authorize.account_list)
+                })
+                .catch((error) => {
+                    console.error("Authorization failed:", error);
+                });
         }
 
-        // Log all URL params
-        console.log("🌐 URL Params:");
-        for (const [key, value] of searchParams.entries()) {
-            console.log(`${key}: ${value}`);
-        }
-    }, [token, isConnected, sendMessage]);
+        // // Log all URL params
+        // console.log("🌐 URL Params:");
+        // for (const [key, value] of searchParams.entries()) {
+        //     console.log(`${key}: ${value}`);
+        // }
+    }, [token, isConnected, sendMessage, authorize]);  // Make sure authorize is included in dependencies
 
-    const isLoading = false; // Toggle if needed
+    const isLoading = authLoading || settingsLoading; // Loading state for both auth and settings
 
     return (
         <div className="min-h-screen">
@@ -160,6 +179,13 @@ const Dashboard = () => {
                         size="md"
                     />
                 </div>
+
+                {/* Check if the user is logged in */}
+                {isLoggedIn ? (
+                    <div>Welcome, you are logged in!</div>
+                ) : (
+                    <div>Please log in to continue</div>
+                )}
 
                 {/* Dashboard Content */}
                 {isLoading ? (
