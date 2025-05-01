@@ -99,7 +99,7 @@ const Login = () => {
                         className="mt-6 mb-12 max-w-2xl text-gray-600"
                     >
                         Mirror the success of top traders automatically. Set up
-                        in minutes
+                        in minutes and start makin gains
                     </Text>
                     <Button
                         variant="primary"
