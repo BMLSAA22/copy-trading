@@ -90,13 +90,14 @@
 
 import { useState, useEffect } from "react";
 import { SegmentedControlSingleChoice, Skeleton } from "@deriv-com/quill-ui";
-import { useLocation } from "react-router-dom";
+import { redirect, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";  // Import the useAuth hook
 import useSettings from "../hooks/useSettings.js";
 import useWebSocket from "../hooks/useWebSocket"; // Your custom WebSocket hook
 import TraderDashboard from "./TraderDashboard";
 import CopierDashboard from "./CopierDashboard";
 import AddCopiers from "./AddCopiers.jsx";
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
     // const { isLoading: authLoading, authorize, isLoggedIn } = useAuth();  // Destructure isLoggedIn and authorize from useAuth
@@ -108,10 +109,12 @@ const Dashboard = () => {
         fetchSettings,
     } = useSettings();
 
-
+    const navigate = useNavigate();
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
-    const token = searchParams.get("token1");
+
+
+    let token = searchParams.get("token1");
     const account = searchParams.get("acct1");
     const currency = searchParams.get("curr1");
 
@@ -126,8 +129,21 @@ const Dashboard = () => {
 
     // Send authorize message via WebSocket if token is present
     useEffect(() => {
+        let ls_token = null
+
+        try {
+            const storedSettings = localStorage.getItem("deriv_default_account");
+            if (storedSettings) {
+                const json =  JSON.parse(storedSettings);
+                console.log('jssssssoooooooooooooooooon' , json)
+                ls_token = json.token
+            }
+        } catch (error) {
+            console.error('Error getting endpoint settings:', error);
+        }
+        token = token || ls_token
         if (token && isConnected) {
-            console.log("🔐 Sending authorize with token:", token);
+
 
             // Use the authorize function from useAuth to change the auth status globally
             authorize(token)
@@ -138,13 +154,10 @@ const Dashboard = () => {
                         JSON.stringify({"token":token , "account":account , "currency":currency })
                         
                     );
-
-                    // console.log(response.authorize.account_list)
-                    // updateAccounts(response.authorize.account_list ,response.authorize.account_list.slice(0) )
-                    // console.log(response.authorize.account_list)
                 })
                 .catch((error) => {
                     console.error("Authorization failed:", error);
+                    navigate('/');
                 });
         }
 
@@ -155,7 +168,16 @@ const Dashboard = () => {
         // }
     }, [token, isConnected, sendMessage, authorize]);  // Make sure authorize is included in dependencies
 
-    const isLoading = authLoading || settingsLoading; // Loading state for both auth and settings
+    const isLoading = authLoading || settingsLoading;
+    console.log("heeeeeeeeereeeee",isLoading) // Loading state for both auth and settings
+    // useEffect(() => {
+    //     if (!isLoggedIn && !isLoading ) {
+    //         navigate('/');
+    //     }
+    // }, [authLoading, isLoggedIn, navigate]);
+
+
+
 
     return (
         <div className="min-h-screen">

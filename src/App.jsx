@@ -70,7 +70,7 @@ function AppContent() {
 
 
                     {/* Protected routes that require WebSocket connection */}
-                    {!isConnected ? (
+                    {/* {!isConnected ? (
                         <Route
                             path="/dashboard"
                             element={
@@ -88,7 +88,7 @@ function AppContent() {
                                 </ProtectedRoute>
                             }
                         />
-                    )}
+                    )} */}
                 </Routes>
             </div>
         </Router>
