@@ -21,14 +21,7 @@ const Header = () => {
     const appId = settings.appId;
     const { logout } = useLogout();
 
-    const handleLogout = async () => {
-        try {
-            await logout();
-            window.location.href = "/";
-        } catch (error) {
-            console.error("Logout failed:", error);
-        }
-    };
+
 
     const handleDerivLogin = () => {
         window.location.href = `https://${server}/oauth2/authorize?app_id=${appId}`;
