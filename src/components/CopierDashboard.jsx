@@ -101,7 +101,7 @@ const CopierDashboard = ({ settings, updateSettings, fetchSettings }) => {
         }
     };
 
-    if (isLoading) {
+    if (false) {
         return (
             <div className="flex justify-center items-center min-h-[200px]">
                 <Spinner />

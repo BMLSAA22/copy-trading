@@ -7,77 +7,65 @@ const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { defaultAccount, isLoading, updateAccounts } = useAuth();
-    const settings = JSON.parse(
-        localStorage.getItem("deriv_endpoint_settings") || "{}"
-    );
+
+    const settings = JSON.parse(localStorage.getItem("deriv_endpoint_settings") || "{}");
     const server = settings.server;
     const appId = 72191;
 
-    useEffect(() => {
-        const handleOAuthRedirect = () => {
-            const urlParams = new URLSearchParams(
-                window.location.search || location.search
-            );
-            const hashParams = new URLSearchParams(
-                location.hash.replace("#", "")
-            );
+    // Parse URL parameters
+    const searchParams = new URLSearchParams(location.search);
+    const hashParams = new URLSearchParams(location.hash.replace("#", ""));
 
+    useEffect(() => {
+        console.log("🔍 Checking URL params for OAuth redirect...");
+        console.log("📌 Search:", location.search);
+        console.log("📌 Hash:", location.hash);
+
+        const handleOAuthRedirect = () => {
             const accounts = [];
             let defaultAcct = null;
-
-            // Iterate through params to find account data
             let index = 1;
-            while (
-                urlParams.has(`acct${index}`) ||
-                hashParams.has(`acct${index}`)
-            ) {
+
+            while (searchParams.has(`acct${index}`) || hashParams.has(`acct${index}`)) {
                 const account = {
-                    account:
-                        urlParams.get(`acct${index}`) ||
-                        hashParams.get(`acct${index}`),
-                    token:
-                        urlParams.get(`token${index}`) ||
-                        hashParams.get(`token${index}`),
-                    currency:
-                        urlParams.get(`cur${index}`) ||
-                        hashParams.get(`cur${index}`),
+                    account: searchParams.get(`acct${index}`) || hashParams.get(`acct${index}`),
+                    token: searchParams.get(`token${index}`) || hashParams.get(`token${index}`),
+                    currency: searchParams.get(`cur${index}`) || hashParams.get(`cur${index}`),
                 };
 
                 if (account.account && account.token) {
                     accounts.push(account);
-                    if (index === 1) {
-                        defaultAcct = account;
-                    }
+                    if (index === 1) defaultAcct = account;
                 }
+
                 index++;
             }
 
             if (accounts.length > 0) {
-                const otherAccounts = accounts.slice(1);
-                updateAccounts(defaultAcct, otherAccounts);
+                updateAccounts(defaultAcct, accounts.slice(1));
                 window.location.href = `${window.location.origin}/dashboard`;
                 return true;
             }
+
             return false;
         };
 
-        // Only handle OAuth redirect if we have query params or hash
-        if (window.location.search || window.location.hash) {
-            const redirectHandled = handleOAuthRedirect();
-            if (redirectHandled) return;
-        }
+        // Try handling redirect if token/account info is in the URL
+        const redirected = handleOAuthRedirect();
+        if (redirected) return;
 
-        // Regular login flow - redirect if already logged in
+        // If already authenticated, redirect to dashboard
         if (!isLoading && defaultAccount?.token) {
             navigate("/dashboard");
         }
-    }, [defaultAccount?.token, navigate, isLoading, updateAccounts]); // Removed location dependency
 
-    const showSpinner =
-        (isLoading ||
-            window.location.search ||
-            window.location.hash.includes("acct")) &&
-        !defaultAccount?.token;
+    }, [defaultAccount?.token, isLoading, navigate, updateAccounts]); // Exclude `location` to avoid unnecessary re-renders
+
+    const showSpinner = (
+        isLoading ||
+        location.search ||
+        location.hash.includes("acct")
+    ) && !defaultAccount?.token;
 
     return (
         <div className="min-h-screen">
@@ -98,15 +86,14 @@ const Login = () => {
                         size="lg"
                         className="mt-6 mb-12 max-w-2xl text-gray-600"
                     >
-                        Mirror the success of top traders automatically. Set up
-                        in minutes and start makin gains
+                        Mirror the success of top traders automatically. Set up in minutes and start making gains.
                     </Text>
                     <Button
                         variant="primary"
                         size="lg"
                         className="mt-6"
                         onClick={() =>
-                            (window.location.href = `https://${server}/oauth2/authorize?app_id=72191`)
+                            window.location.href = `https://${server}/oauth2/authorize?app_id=${appId}`
                         }
                     >
                         Get started

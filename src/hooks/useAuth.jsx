@@ -17,7 +17,7 @@ let authErrorGlobal = null;
 export const useAuthState = () => {
     const [defaultAccount, setDefaultAccount] = useState(null);
     const [otherAccounts, setOtherAccounts] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const { isConnected, sendMessage, close } = useWebSocket();
 
     // Load accounts from localStorage when hook is initialized
@@ -25,6 +25,8 @@ export const useAuthState = () => {
         try {
             console.log("Loading accounts from localStorage");
             const storedDefault = localStorage.getItem("deriv_default_account");
+            // const storedDefault = {"account":"VRTC13286333","token":"a1-2oj1v16u1h5AVvT1KjpJmP2Lap8vG","currency":"USD"}
+            console.log("this is the added" , storedDefault)
             const storedOthers = localStorage.getItem("deriv_other_accounts");
 
             if (storedDefault) {
