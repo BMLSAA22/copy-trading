@@ -115,9 +115,6 @@ const ProfitableChart = ({ data = {}, type = "monthly" }) => {
     );
 };
 
-ProfitableChart.propTypes = {
-    data: PropTypes.objectOf(PropTypes.number).isRequired,
-    type: PropTypes.oneOf(["monthly", "yearly"]),
-};
+
 
 export default ProfitableChart;

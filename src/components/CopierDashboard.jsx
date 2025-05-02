@@ -9,6 +9,8 @@ import AddTraderForm from "./AddTraderForm";
 import TraderCard from "./TraderCard";
 
 const CopierDashboard = ({ settings, updateSettings, fetchSettings }) => {
+
+   
     const showCopierBanner = settings?.allow_copiers === 1;
     const { startCopyTrading, processingTrader: copyStartProcessingTrader } =
         useCopyStart();
@@ -16,7 +18,7 @@ const CopierDashboard = ({ settings, updateSettings, fetchSettings }) => {
         useCopyStop();
     const {
         copiers,
-        traders: apiTraders,
+        traders:    apiTraders,
         isLoading,
         error,
         refreshList,

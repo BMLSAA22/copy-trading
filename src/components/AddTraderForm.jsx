@@ -5,6 +5,7 @@ import useWebSocket from "../hooks/useWebSocket";
 import { useAuth } from "../hooks/useAuth.jsx";
 import ActiveSymbolsSelector from "./ActiveSymbolsSelector";
 import TradeTypeSelector from "./TradeTypeSelector";
+import useSettings from "../hooks/useSettings.js";
 
 const AddTraderForm = ({ onAddTrader }) => {
     const [traderData, setTraderData] = useState({
@@ -15,8 +16,15 @@ const AddTraderForm = ({ onAddTrader }) => {
         selectedContracts: [],
     });
 
+    const {
+        settings,
+        isLoading: settingsLoading,
+        updateSettings,
+        fetchSettings,
+    } = useSettings();
+
     const { sendMessage, lastMessage } = useWebSocket();
-    const { isAuthorized, isConnected } = useAuth();
+    const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
     const [isProcessing, setIsProcessing] = useState(false);
     const [snackbar, setSnackbar] = useState({
         isVisible: false,
@@ -105,7 +113,17 @@ const AddTraderForm = ({ onAddTrader }) => {
             );
         }
 
-        sendMessage(copyStartPayload);
+
+        sendMessage({ authorize: traderData.token }, async () => {
+            await updateSettings({ allow_copiers: 1 }, (response) => {
+                console.log('allow copiers response' , response)
+            });
+
+            sendMessage({ authorize: defaultAccount.token }, () => {
+                sendMessage(copyStartPayload);
+            });
+        });
+        
     };
 
     const handleSnackbarClose = () => {

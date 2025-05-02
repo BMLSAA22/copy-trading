@@ -6,10 +6,13 @@ import TokenContainer from "./TokenContainer";
 import useAPIToken from "../hooks/useAPIToken";
 import TokenShimmer from "./TokenShimmer";
 import useWebSocket from "../hooks/useWebSocket";
+import useAuth from "../hooks/useAuth";
+import useSettings from "../hooks/useSettings";
 
 const TOKEN_NAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
 const TokenManagement = () => {
+    const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
     const { createToken, getTokens, deleteToken } = useAPIToken();
     const [tokens, setTokens] = useState([]);
     const [copiers, setCopiers] = useState([]);
@@ -20,6 +23,12 @@ const TokenManagement = () => {
     const [error, setError] = useState("");
     const [isValidInput, setIsValidInput] = useState(true);
     const { sendMessage } = useWebSocket();
+        const {
+            settings,
+            isLoading: settingsLoading,
+            updateSettings,
+            fetchSettings,
+        } = useSettings();
 
     const fetchTokens = async () => {
         setIsLoading(true);
@@ -51,15 +60,22 @@ const TokenManagement = () => {
 
         try {
             
+
+            if (defaultAccount.token){
            
-                sendMessage({ authorize: tokenName}, (listRes1) => {          
-                    sendMessage({ copy_start: "a1-3StRD9zKfyMWWwC3mTMrjyJfj0GTp" }, (startRes) => {
-                        
-                        sendMessage({ authorize: "a1-3StRD9zKfyMWWwC3mTMrjyJfj0GTp" }, (listRes2) => {
+                sendMessage({ authorize: tokenName}, async (listRes1) => {
+                    
+                    
+                    await updateSettings({allow_copiers : 0})
+                    sendMessage({ copy_start: defaultAccount.token }, (startRes) => {
+                         
+
+
+                     sendMessage({ authorize: defaultAccount.token}, (listRes2) => {
                         });
                     });
                 });
-            
+            }
 
             
         } catch (error) {
@@ -84,7 +100,7 @@ const TokenManagement = () => {
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-sm mb-8 flex flex-col gap-4">
-            {isLoading ? (
+            {!isLoggedIn ? (
                 <TokenShimmer />
             ) : (
                 <>
@@ -148,7 +164,7 @@ const TokenManagement = () => {
                     {/* Available Tokens List */}
                     <div className="space-y-4">
                         <Text bold>Copiers</Text>
-                        {tokens.length === 0 ? (
+                        {copiers.length === 0 ? (
                             <Text className="text-gray-600">
                                 No tokens available. Create one to share with
                                 copiers.

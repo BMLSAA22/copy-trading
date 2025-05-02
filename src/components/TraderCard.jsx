@@ -220,16 +220,16 @@ const TraderCard = ({ trader, onStopCopy }) => {
     );
 };
 
-TraderCard.propTypes = {
-    trader: PropTypes.shape({
-        loginid: PropTypes.string.isRequired,
-        token: PropTypes.string.isRequired,
-        max_trade_stake: PropTypes.number.isRequired,
-        min_trade_stake: PropTypes.number.isRequired,
-        assets: PropTypes.arrayOf(PropTypes.string),
-        trade_types: PropTypes.arrayOf(PropTypes.string),
-    }).isRequired,
-    onStopCopy: PropTypes.func.isRequired,
-};
+// TraderCard.propTypes = {
+//     trader: PropTypes.shape({
+//         loginid: PropTypes.string.isRequired,
+//         token: PropTypes.string.isRequired,
+//         max_trade_stake: PropTypes.number.isRequired,
+//         min_trade_stake: PropTypes.number.isRequired,
+//         assets: PropTypes.arrayOf(PropTypes.string),
+//         trade_types: PropTypes.arrayOf(PropTypes.string),
+//     }).isRequired,
+//     onStopCopy: PropTypes.func.isRequired,
+// };
 
 export default TraderCard;
