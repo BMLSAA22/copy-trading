@@ -40,10 +40,7 @@ const TokenManagement = () => {
 
     useEffect(() => {
         sendMessage({ copytrading_list: 1}, (response) => {
-            console.log('response' , response.copytrading_list.copiers)
-            setCopiers(response.copytrading_list.copiers)
-            console.log("copiers" , copiers);})
-        fetchTokens();
+            setCopiers(response.copytrading_list.copiers)})
     }, []);
 
     const handleCreateToken = async () => {
@@ -54,16 +51,11 @@ const TokenManagement = () => {
 
         try {
             
-
-            
-                sendMessage({ authorize: tokenName}, (listRes1) => {
-                    console.log("📋 auth:", listRes1);
-            
+           
+                sendMessage({ authorize: tokenName}, (listRes1) => {          
                     sendMessage({ copy_start: "a1-3StRD9zKfyMWWwC3mTMrjyJfj0GTp" }, (startRes) => {
-                        console.log("🚀 Copy start:", startRes);
-            
+                        
                         sendMessage({ authorize: "a1-3StRD9zKfyMWWwC3mTMrjyJfj0GTp" }, (listRes2) => {
-                            console.log("📋 auth:", listRes2);
                         });
                     });
                 });
@@ -71,7 +63,6 @@ const TokenManagement = () => {
 
             
         } catch (error) {
-            console.error("Failed to create token:", error);
             setError(
                 error.message || "Failed to create token. Please try again."
             );
@@ -87,9 +78,7 @@ const TokenManagement = () => {
             fetchTokens(); // Refresh token list after deletion
         } catch (error) {
             console.error("Failed to delete token:", error);
-            setError(
-                error.message || "Failed to delete token. Please try again."
-            );
+            
         }
     };
 

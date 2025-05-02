@@ -6,7 +6,6 @@ import useLogout from "../hooks/useLogout";
 const AccountSelector = ({ account }) => {
     const { logout } = useLogout();
     const { clearAccounts } = useAuth();
-    console.log('account from header logout' , account )
 
 
     const label = `${account.loginid} | ${

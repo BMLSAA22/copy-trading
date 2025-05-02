@@ -21,15 +21,12 @@ function App() {
     useEffect(() => {
         const initializeEndpointSettings = () => {
             try {
-                console.log("Checking for stored endpoint settings...");
+
                 const storedSettings = getStoredEndpointSettings();
-                console.log("Found stored settings:", storedSettings);
 
                 // Only set defaults if no settings exist at all
                 if (!storedSettings) {
-                    console.log(
-                        "No stored settings found, setting defaults..."
-                    );
+
                     const defaultServer = getDefaultServer();
                     const defaultAppId = getDefaultAppId();
                     setEndpointSettings(defaultServer, defaultAppId);

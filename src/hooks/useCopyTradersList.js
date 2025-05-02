@@ -51,11 +51,7 @@ const useCopyTradersList = () => {
 
     // Initial fetch when authorized and connected
     useEffect(() => {
-        console.log('come on fetch man')
-        console.log(isLoggedIn)
-        console.log(authLoading)
         if (isLoggedIn ) {
-            console.log('entered here ')
             fetchList()
         }
     }, [isLoggedIn, authLoading, fetchList])

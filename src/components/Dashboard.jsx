@@ -135,7 +135,6 @@ const Dashboard = () => {
             const storedSettings = localStorage.getItem("deriv_default_account");
             if (storedSettings) {
                 const json =  JSON.parse(storedSettings);
-                console.log('jssssssoooooooooooooooooon' , json)
                 ls_token = json.token
             }
         } catch (error) {
@@ -161,20 +160,11 @@ const Dashboard = () => {
                 });
         }
 
-        // // Log all URL params
-        // console.log("🌐 URL Params:");
-        // for (const [key, value] of searchParams.entries()) {
-        //     console.log(`${key}: ${value}`);
-        // }
+
     }, [token, isConnected, sendMessage, authorize]);  // Make sure authorize is included in dependencies
 
     const isLoading = authLoading || settingsLoading;
-    console.log("heeeeeeeeereeeee",isLoading) // Loading state for both auth and settings
-    // useEffect(() => {
-    //     if (!isLoggedIn && !isLoading ) {
-    //         navigate('/');
-    //     }
-    // }, [authLoading, isLoggedIn, navigate]);
+
 
 
 

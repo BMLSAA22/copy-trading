@@ -4,8 +4,7 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.jsx'
 
-// Immediately register service worker
-console.log('🚀 Initializing service worker...')
+
 try {
   const updateSW = registerSW({
     immediate: true,

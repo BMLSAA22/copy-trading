@@ -17,9 +17,7 @@ const Login = () => {
     const hashParams = new URLSearchParams(location.hash.replace("#", ""));
 
     useEffect(() => {
-        console.log("🔍 Checking URL params for OAuth redirect...");
-        console.log("📌 Search:", location.search);
-        console.log("📌 Hash:", location.hash);
+
 
         const handleOAuthRedirect = () => {
             const accounts = [];

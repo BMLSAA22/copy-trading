@@ -13,13 +13,11 @@ const PWAInstallBanner = () => {
             || document.referrer.includes('android-app://');
 
         if (isStandalone) {
-            console.log('📱 App is already installed');
             return;
         }
 
         // Handle install prompt ready
         const handleInstallReady = () => {
-            console.log('✅ Install prompt ready, showing banner');
             setDeferredPrompt(window.deferredPrompt);
             setInstallable(true);
             setIsVisible(true);
@@ -27,7 +25,6 @@ const PWAInstallBanner = () => {
 
         // Handle successful installation
         const handleInstalled = () => {
-            console.log('🎉 PWA was installed');
             setIsVisible(false);
             setInstallable(false);
             setDeferredPrompt(null);

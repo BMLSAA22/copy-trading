@@ -30,7 +30,7 @@ const Header = () => {
         useEffect(() => {
             if(isLoggedIn){
             sendMessage({"balance":1} , (response)=>{
-                console.log('*/*/*/*/*/**/*/*/*/*/*/*' , response)
+
                 setAccount(response.balance)
 
             })}
