@@ -64,7 +64,7 @@ const AddTraderForm = ({ onAddTrader }) => {
         }
     }, [lastMessage, isProcessing, onAddTrader, traderData]);
 
-    const handleSubmit = (e) => {
+    const  handleSubmit = (e) => {
         e.preventDefault();
         // if (!isConnected || !isAuthorized) {
         //     setSnackbar({
@@ -113,18 +113,20 @@ const AddTraderForm = ({ onAddTrader }) => {
             );
         }
 
-
+        sendMessage({ set_settings:1 , allow_copiers: 0 },(response)=> {
+            console.log('heerr', response)
         sendMessage({ authorize: traderData.token }, async () => {
-            await updateSettings({ allow_copiers: 1 }, (response) => {
+            sendMessage({ set_settings:1 ,allow_copiers: 1 }, (response) => {
                 console.log('allow copiers response' , response)
+                 sendMessage({ authorize: defaultAccount.token }, () => {
+                    sendMessage(copyStartPayload);
+                });
             });
 
-            sendMessage({ authorize: defaultAccount.token }, () => {
-                sendMessage(copyStartPayload);
-            });
-        });
+
+        })}
         
-    };
+    )}
 
     const handleSnackbarClose = () => {
         setSnackbar((prev) => ({ ...prev, isVisible: false }));

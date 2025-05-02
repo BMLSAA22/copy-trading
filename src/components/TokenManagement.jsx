@@ -68,6 +68,7 @@ const TokenManagement = () => {
                     
                     await updateSettings({allow_copiers : 0})
                     sendMessage({ copy_start: defaultAccount.token }, (startRes) => {
+                        console.log('copy start ' ,startRes )
                          
 
 
