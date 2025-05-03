@@ -22,7 +22,7 @@ const TradeForm = () => {
   const [durationType, setDurationType] = useState("ticks");
   const [duration, setDuration] = useState("1");
   const [stakeType, setStakeType] = useState("stake");
-  const [stake, setStake] = useState(16.00);
+  const [stake, setStake] = useState("16.00");
   const [currency, setCurrency] = useState("USD");
   const [market, setMarket] = useState("bear");
   const [tradeType, setTradeType] = useState("rise-fall");
@@ -35,8 +35,12 @@ const TradeForm = () => {
   };
   
   const handleStakeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStake(Number(e.target.value));
+    const value = e.target.value;
+    setStake(value)
+  
+   
   };
+  
   const { isConnected,sendMessage, lastMessage } = useWebSocket();
 
 
