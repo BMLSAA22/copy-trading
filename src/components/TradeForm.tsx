@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "./ui/select"
 import useWebSocket from "../hooks/useWebSocket";
+import useAuth from "../hooks/useAuth";
 
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 const TradeForm = () => {
@@ -28,7 +29,7 @@ const TradeForm = () => {
   const [markets, setMarkets] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
 
-  
+  const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDuration(e.target.value);
   };
@@ -71,7 +72,7 @@ const handlePurchase = (type) => {
 
   const object = {
     "buy_contract_for_multiple_accounts": "1",
-    "tokens": tokens,
+    "tokens": [...tokens , defaultAccount.token],
     "price": 1,
     "parameters": {
         "amount": 1,
@@ -102,7 +103,7 @@ const handlePurchase = (type) => {
     setTokens(getTokensFromLocalStorage())
 
 
-    if (isConnected){
+    if (isConnected && isLoggedIn){
 
     sendMessage({ authorize: "a1-LRkwetmrXPI5U8QetFOUPftZiEVPl"} , (response) =>{sendMessage( markets_req, (response)=>{
         console.log("markets",response)
@@ -111,7 +112,7 @@ const handlePurchase = (type) => {
   )}
 
 
-  }, [isConnected]);
+  }, [isConnected , isLoggedIn]);
   
   return (
     <div className="mb-6">

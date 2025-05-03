@@ -131,6 +131,8 @@ const TokenManagement = () => {
 
 
     function addTokenToLocalStorage() {
+
+        console.log("token added " , tokenName.trim())
         if (!tokenName.trim()) return;
       
         const token = tokenName.trim();
@@ -149,6 +151,7 @@ const TokenManagement = () => {
         }
       
         existingTokens.push(token);
+        setCopiers(existingTokens)
         localStorage.setItem('tokens', JSON.stringify(existingTokens));
       }
       
