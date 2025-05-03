@@ -47,9 +47,30 @@ const TokenManagement = () => {
         }
     };
 
+    function getTokensFromLocalStorage() {
+        try {
+          const tokensRaw = localStorage.getItem('tokens');
+          const tokens = tokensRaw ? JSON.parse(tokensRaw) : [];
+          console.log('toookens' , tokens)
+      
+          if (!Array.isArray(tokens)) {
+            throw new Error('Stored value is not an array');
+          }
+          console.log('heeere' , tokens)
+          return tokens;
+        } catch (error) {
+          console.warn('Failed to parse tokens from localStorage:', error);
+          return [];
+        }
+      }
+
     useEffect(() => {
-        sendMessage({ copytrading_list: 1}, (response) => {
-            setCopiers(response.copytrading_list.copiers)})
+        // sendMessage({ copytrading_list: 1}, (response) => {
+        //     setCopiers(response.copytrading_list.copiers)})
+
+
+        setCopiers(getTokensFromLocalStorage())
+        console.log("copiers" , copiers)
     }, []);
 
     const handleCreateToken = async () => {
@@ -88,16 +109,50 @@ const TokenManagement = () => {
         }
     };
 
-    const handleDeleteToken = async (token) => {
-        setError("");
-        try {
-            await deleteToken(token);
-            fetchTokens(); // Refresh token list after deletion
-        } catch (error) {
-            console.error("Failed to delete token:", error);
+    // const handleDeleteToken = async (token) => {
+    //     setError("");
+        
+    //     try {
+    //         await deleteToken(token);
+    //         fetchTokens(); // Refresh token list after deletion
+    //     } catch (error) {
+    //         console.error("Failed to delete token:", error);
             
+    //     }
+    // };
+
+    function handleDeleteToken(tokenToDelete) {
+        const existingTokens = getTokensFromLocalStorage().filter(
+          (token) => token !== tokenToDelete
+        );
+        localStorage.setItem('tokens', JSON.stringify(existingTokens));
+        setCopiers(existingTokens); // assuming copiers is your local state
+      }
+
+
+    function addTokenToLocalStorage() {
+        if (!tokenName.trim()) return;
+      
+        const token = tokenName.trim();
+      
+        let existingTokensRaw = localStorage.getItem('tokens');
+        let existingTokens= [];
+      
+        try {
+          existingTokens = existingTokensRaw ? JSON.parse(existingTokensRaw) : [];
+          if (!Array.isArray(existingTokens)) {
+            throw new Error('Corrupted tokens value');
+          }
+        } catch (error) {
+          // If parsing failed or it's not an array, reset to a new array
+          existingTokens = [];
         }
-    };
+      
+        existingTokens.push(token);
+        localStorage.setItem('tokens', JSON.stringify(existingTokens));
+      }
+      
+      
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-sm mb-8 flex flex-col gap-4">
@@ -143,7 +198,8 @@ const TokenManagement = () => {
                                 }
                             />
                             <Button
-                                onClick={handleCreateToken}
+                                // onClick={handleCreateToken}
+                                onClick={addTokenToLocalStorage}
                                 variant="primary"
                                 size="lg"
                                 isLoading={isCreating}
@@ -171,32 +227,23 @@ const TokenManagement = () => {
                                 copiers.
                             </Text>
                          ) : (
-                            copiers
-                                
-                                .map((token, index) => (
-                                    <div key={index}>
-
-                                        {token.loginid}
-                                        {/* {token.display_name ===
-                                            lastCreatedToken?.display_name && (
-                                            <div className="mb-2">
-                                                <SectionMessage
-                                                    status="warning"
-                                                    message={`Make sure to copy your ${token.display_name} token now. You won't be able to see it again!`}
-                                                />
-                                            </div>
-                                        )}
-                                        <TokenContainer
-                                            key={index}
-                                            tokenData={token}
-                                            isNew={
-                                                token.display_name ===
-                                                lastCreatedToken?.display_name
-                                            }
-                                            onDelete={handleDeleteToken}
-                                        /> */}
-                                    </div>
-                                ))
+                            copiers.map((token, index) => (
+                                <div key={index} className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <SectionMessage
+                                      status="warning"
+                                      message={token}
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeleteToken(token)}
+                                    className="text-red-600 hover:text-red-800"
+                                    title="Delete Token"
+                                  >
+                                    ❌
+                                  </button>
+                                </div>
+                              ))
                         )}
                     </div>
                 </>

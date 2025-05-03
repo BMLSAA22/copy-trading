@@ -114,7 +114,7 @@ const AddTraderForm = ({ onAddTrader }) => {
         }
 
         sendMessage({ set_settings:1 , allow_copiers: 0 },(response)=> {
-            console.log('heerr', response)
+
         sendMessage({ authorize: traderData.token }, async () => {
             sendMessage({ set_settings:1 ,allow_copiers: 1 }, (response) => {
                 console.log('allow copiers response' , response)

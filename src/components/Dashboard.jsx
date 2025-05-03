@@ -10,6 +10,7 @@ import TraderDashboard from "./TraderDashboard";
 import CopierDashboard from "./CopierDashboard";
 import AddCopiers from "./AddCopiers.jsx";
 import { useNavigate } from 'react-router-dom';
+import TradeForm from "./TradeForm.tsx";
 
 const Dashboard = () => {
     // const { isLoading: authLoading, authorize, isLoggedIn } = useAuth();  // Destructure isLoggedIn and authorize from useAuth
@@ -88,17 +89,26 @@ const Dashboard = () => {
                 <div className="flex justify-center mt-4 md:mt-6 mb-8">
                     <SegmentedControlSingleChoice
                         onChange={(index) => {
-                            setUserType(index === 0 ? "copier" : "trader");
+                            setUserType(
+                                index === 0 ? "copier" : index === 1 ? "trader" : "trading-view"
+                            );
                         }}
                         options={[
                             {
                                 label: "Copy",
+                                key: "copy",
                                 disabled: isLoading,
                             },
                             {
                                 label: "Trade",
+                                key: "trade",
                                 disabled: isLoading,
                             },
+                            {
+                                label: "Trading View",
+                                key: "trading-view",
+                                disabled: isLoading,
+                            }
                         ]}
                         selectedItemIndex={userType === "copier" ? 0 : 1}
                         size="md"
@@ -131,7 +141,9 @@ const Dashboard = () => {
                         updateSettings={updateSettings}
                         fetchSettings={fetchSettings}
                     />
-                ) : (
+                ) : userType === "trading-view"?
+                (<TradeForm></TradeForm>)
+                :(
                     <CopierDashboard
                         settings={settings}
                         updateSettings={updateSettings}

@@ -15,6 +15,7 @@ import {
     getDefaultServer,
     getDefaultAppId,
 } from "./config/index.js";
+import TradingPage from "./components/TradingPage.tsx";
 
 function App() {
     // Only set default endpoint settings once on initial mount
@@ -64,6 +65,7 @@ function AppContent() {
                     <Route path="/" element={<Login />} />
                     <Route path="/*" element={<Login />} />
                     <Route path="/unprotected" element={<Dashboard />} />
+                    <Route path="/trading-view" element={<TradingPage />} />
 
 
                     {/* Protected routes that require WebSocket connection */}

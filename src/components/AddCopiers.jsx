@@ -32,7 +32,7 @@ const AddCopiers = ({ settings, updateSettings, fetchSettings }) => {
 
     return (
         <div className="max-w-6xl mx-auto p-6">
-            {settings?.allow_copiers ? (
+            {/* {settings?.allow_copiers ? ( */}
                 <div className="flex flex-col md:flex-row gap-6">
                     <TraderDesktopNavigation
                         selectedMenu={selectedMenu}
@@ -58,7 +58,7 @@ const AddCopiers = ({ settings, updateSettings, fetchSettings }) => {
                         onMenuSelect={setSelectedMenu}
                     />
                 </div>
-            ) : (
+            {/* ) : (
                 <>
                     {traders.length > 0 && (
                         <SectionMessage
@@ -66,13 +66,13 @@ const AddCopiers = ({ settings, updateSettings, fetchSettings }) => {
                             size="sm"
                             status="danger"
                         />
-                    )}
-                    <TraderBanner
+                    )} */}
+                    {/* <TraderBanner
                         onStartTrading={handleStartTrading}
                         disabled={traders.length > 0}
                     />
                 </>
-            )}
+            )} */}
         </div>
     );
 };
