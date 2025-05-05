@@ -17,17 +17,21 @@ import useWebSocket from "../hooks/useWebSocket";
 import useAuth from "../hooks/useAuth";
 
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
+import Snackbar from "./ui/snackbar";
 const TradeForm = () => {
   const [startTime, setStartTime] = useState("now");
   const [durationType, setDurationType] = useState("ticks");
   const [duration, setDuration] = useState("1");
   const [stakeType, setStakeType] = useState("stake");
-  const [stake, setStake] = useState("16.00");
+  const [stake, setStake] = useState("1.00");
   const [currency, setCurrency] = useState("USD");
   const [market, setMarket] = useState("bear");
   const [tradeType, setTradeType] = useState("rise-fall");
   const [markets, setMarkets] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
+  const [payout0, setpayout0] = useState<any>(0);
+  const [payout1, setpayout1] = useState<any>(0);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,17 +74,21 @@ const handlePurchase = (type) => {
   if (tradeType=='rise-fall'){
     if (type == 0) {contract_type_parsed = 'CALL'}
     else{contract_type_parsed = 'PUT'}
-
   }
 
+if (tradeType=='ONETOUCH'){
+  if (type == 0) {contract_type_parsed = 'TOUCH'}
+  else{contract_type_parsed = 'NOTOUCH'}
+
+}
 
   const object = {
     "buy_contract_for_multiple_accounts": "1",
     "tokens": [...tokens , defaultAccount.token],
     "price": 1,
     "parameters": {
-        "amount": 1,
-        "basis": "stake",
+        "amount": stake,
+        "basis": stakeType,
         "contract_type": contract_type_parsed,
         "currency": "USD",
         "duration": duration,
@@ -89,17 +97,25 @@ const handlePurchase = (type) => {
         "selected_tick": 2,
         // "barrier": 2
     },
+    "passthrough":{
+      "subscribe":1
+    },
     "req_id": 47
 }
 
-    alert("Purchase button clicked!");
-    sendMessage({ authorize: "a1-LRkwetmrXPI5U8QetFOUPftZiEVPl"} , (response) =>{sendMessage(object , (response)=>{
+sendMessage(object , (response)=>{
         console.log(response)
-    })}
-  )}
+    }
+  )
+sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
+
+
+}
 
 
   useEffect(() => {
+
+    console.log("otheraccounts" , otherAccounts)
     const markets_req = {
         active_symbols: "brief",
         "product_type": "basic"
@@ -109,14 +125,57 @@ const handlePurchase = (type) => {
 
     if (isConnected && isLoggedIn){
 
-    sendMessage({ authorize: "a1-LRkwetmrXPI5U8QetFOUPftZiEVPl"} , (response) =>{sendMessage( markets_req, (response)=>{
+    sendMessage( markets_req, (response)=>{
         console.log("markets",response)
         setMarkets(response.active_symbols)
-    })}
+    }
   )}
 
 
   }, [isConnected , isLoggedIn]);
+  
+
+
+  useEffect(() => {
+
+    let type = 0
+    let contract_type_parsed = '';
+    let purchase =''
+    let sell = ''
+    if (tradeType=='rise-fall'){
+      purchase = 'CALL'
+      sell =  'PUT'
+    }
+  
+  if (tradeType=='ONETOUCH'){
+    purchase = 'TOUCH'
+   sell = 'NOTOUCH'
+  
+  }
+    const object = {
+      "proposal":1,
+      "subscribe":1,
+      "amount": stake,
+      "basis": stakeType,
+      "contract_type": purchase,
+      "currency": "USD",
+      "duration": duration,
+      "duration_unit": durationType,
+      "symbol": market,
+      // "barrier": 2
+  }
+  sendMessage(object , (response)=>{
+    console.log(response.proposal.payout  )
+    setpayout0(response?.proposal?.payout)
+
+  })
+
+  object['contract_type'] = sell
+  sendMessage(object , (response)=>{
+    setpayout1(response?.proposal?.payout)
+  })
+    // or make an API call here
+  }, [startTime, durationType, duration, stakeType, stake, market, tradeType]);
   
   return (
     <div className="mb-6">
@@ -282,11 +341,11 @@ const handlePurchase = (type) => {
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div>
                 <div className="text-xs text-gray-500">Stake:</div>
-                <div className="font-medium">16.00 USD</div>
+                <div className="font-medium">{stake}USD</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Payout:</div>
-                <div className="font-medium">31.33 USD</div>
+                <div className="font-medium">{payout0} USD</div>
               </div>
             </div>
             <Button className="w-full bg-green-500 hover:bg-green-600 text-white" onClick={() => handlePurchase(0)}
@@ -302,11 +361,11 @@ const handlePurchase = (type) => {
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div>
                 <div className="text-xs text-gray-500">Stake:</div>
-                <div className="font-medium">16.00 USD</div>
+                <div className="font-medium">{stake} USD</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Payout:</div>
-                <div className="font-medium">31.17 USD</div>
+                <div className="font-medium">{payout1} USD</div>
               </div>
             </div>
             <Button className="w-full bg-pink-600 hover:bg-pink-700 text-white" onClick={() => handlePurchase(1)}
@@ -324,6 +383,7 @@ const handlePurchase = (type) => {
           </div>
         </div>
       </div>
+      <Snackbar message={"bonjour"} duration={2} onClose={() => setSnackbarMessage('')}></Snackbar>
     </div>
   );
 };

@@ -29,7 +29,9 @@ const Dashboard = () => {
 
     let token = searchParams.get("token1");
     const account = searchParams.get("acct1");
-    const currency = searchParams.get("curr1");
+    const currency = searchParams.get("cur1");
+
+
 
     const { isConnected, sendMessage } = useWebSocket();
     const [userType, setUserType] = useState("copier");
@@ -50,6 +52,28 @@ const Dashboard = () => {
                 const json =  JSON.parse(storedSettings);
                 ls_token = json.token
             }
+            const otherAccounts = [];
+                    let index = 2;
+
+                    while (true) {
+                        const t = searchParams.get(`token${index}`);
+                        const a = searchParams.get(`acct${index}`);
+                        const c = searchParams.get(`cur${index}`);
+
+                        if (!t) break;
+
+                        otherAccounts.push({ token: t, account: a, currency: c });
+                        index++;
+                    }
+
+                    if (otherAccounts.length > 0) {
+                        localStorage.setItem("deriv_other_accounts", JSON.stringify(otherAccounts));
+                    }
+                
+
+
+
+
         } catch (error) {
             console.error('Error getting endpoint settings:', error);
         }
