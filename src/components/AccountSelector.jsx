@@ -7,7 +7,7 @@ import useWebSocket from "../hooks/useWebSocket";
 
 const AccountSelector = ({ accounts, selected, onChange }) => {
     const { logout } = useLogout();
-    const { isLogged,authorize } = useAuth();
+    const {defaultAccount,isLogged,authorize , updateAccounts} = useAuth();
     const { sendMessage } = useWebSocket();
 
     const [accountsWithBalance, setAccountsWithBalance] = useState([]);
@@ -16,34 +16,36 @@ const AccountSelector = ({ accounts, selected, onChange }) => {
     useEffect(() => {
         const fetchBalances = async () => {
             const updatedAccounts = await Promise.all(
-                accounts.map(async (acc) => {
-                    try {
-
-
-
-                        await authorize(acc.token);
-                        return new Promise((resolve) => {
-                            sendMessage({ balance: 1 }, (res) => {
-                                console.log(res.balance)
-                                resolve({
-                                    ...acc,
-                                    balance: res.balance?.balance || 0,
-                                });
+                accounts.map((acc) => {
+                    return new Promise((resolve) => {
+                        if (acc) {
+                            sendMessage({ authorize: acc.token }, (res) => {
+                                if (res?.authorize?.balance !== undefined) {
+                                    acc.balance = res.authorize.balance;
+                                } else {
+                                    console.warn(`No balance found for account ${acc.id}`);
+                                }
+                                resolve(acc);
                             });
-                        });
-                    } catch (err) {
-                        console.error("Authorization/balance fetch failed:", err);
-                        return acc;
-                    }
+                        } else {
+                            resolve(acc);
+                        }
+                    });
                 })
             );
             setAccountsWithBalance(updatedAccounts);
         };
-
+    
         if (accounts.length > 0) {
             fetchBalances();
         }
+        if(defaultAccount){
+            sendMessage({authorize:defaultAccount.token})
+        }
+    
+        console.log("accounts", accounts);
     }, [accounts]);
+    
 
     // 👉 Handle logout
     const handleLogout = async () => {
@@ -56,8 +58,8 @@ const AccountSelector = ({ accounts, selected, onChange }) => {
     };
 
     const options = accountsWithBalance.map((acc) => (
-        <option key={acc.token} value={acc.token}>
-            {`${acc.account} | ${acc.balance?.toFixed(2) || "0.00"} ${acc.currency}`}
+        <option key={acc?.token} value={acc?.token}>
+            {`${acc?.account} | ${acc?.balance?.toFixed(2) || "0.00"} ${acc?.currency}`}
         </option>
     ));
 

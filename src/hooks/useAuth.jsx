@@ -32,6 +32,8 @@ export const useAuthState = () => {
         } finally {
             setIsLoading(false);
         }
+
+        
     }, []);
 
     // Authorize function that sets the global isLoggedIn state

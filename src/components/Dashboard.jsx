@@ -140,11 +140,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Check if the user is logged in */}
-                {isLoggedIn ? (
-                    <div>Welcome, you are logged in!</div>
-                ) : (
-                    <div>Please log in to continue</div>
-                )}
+               
 
                 {/* Dashboard Content */}
                 {isLoading ? (

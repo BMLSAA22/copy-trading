@@ -20,7 +20,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 import Snackbar from "./ui/snackbar";
 const TradeForm = () => {
   const [startTime, setStartTime] = useState("now");
-  const [durationType, setDurationType] = useState("ticks");
+  const [durationType, setDurationType] = useState("t");
   const [duration, setDuration] = useState("1");
   const [stakeType, setStakeType] = useState("stake");
   const [stake, setStake] = useState("1.00");
@@ -31,7 +31,10 @@ const TradeForm = () => {
   const [tokens, setTokens] = useState<any[]>([]);
   const [payout0, setpayout0] = useState<any>(0);
   const [payout1, setpayout1] = useState<any>(0);
+  const [price, setPrice] = useState<any>(0);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [barrier, setBarrier] = useState("");
+
 
   const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,18 +50,18 @@ const TradeForm = () => {
   
   const { isConnected,sendMessage, lastMessage } = useWebSocket();
 
-
+  const handleBarrierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBarrier(e.target.value);
+  };
       
   function getTokensFromLocalStorage() {
     try {
       const tokensRaw = localStorage.getItem('tokens');
       const tokens = tokensRaw ? JSON.parse(tokensRaw) : [];
-      console.log('toookens' , tokens)
   
       if (!Array.isArray(tokens)) {
         throw new Error('Stored value is not an array');
       }
-      console.log('heeere' , tokens)
       return tokens;
     } catch (error) {
       console.warn('Failed to parse tokens from localStorage:', error);
@@ -104,10 +107,28 @@ if (tradeType=='ONETOUCH'){
 }
 
 sendMessage(object , (response)=>{
-        console.log(response)
+  const results = response.buy_contract_for_multiple_accounts?.result || [];
+  const total = results.length;
+  
+  // Separate successful and failed results
+  const successful = results.filter(item => !item.code);
+  const failed = results.filter(item => item.code);
+  
+  let alertMessage = `Buy contract results:\n\n` +
+                     `✅ Successful: ${successful.length}\n` +
+                     `❌ Failed: ${failed.length}\n`;
+  
+  if (failed.length > 0) {
+      alertMessage += `\nFailure details:\n`;
+      failed.forEach((item, idx) => {
+          alertMessage += `🔸 Token: ${item.token}\n   Reason: ${item.message_to_client}\n\n`;
+      });
+  }
+  
+  alert(alertMessage);
     }
   )
-sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
+// sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
 
 
 }
@@ -137,7 +158,9 @@ sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
 
 
   useEffect(() => {
+  
 
+    // setInterval(() => {
     let type = 0
     let contract_type_parsed = '';
     let purchase =''
@@ -165,37 +188,52 @@ sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
       // "barrier": 2
   }
   sendMessage(object , (response)=>{
-    console.log(response.proposal.payout  )
-    setpayout0(response?.proposal?.payout)
 
+
+   if (response?.error) {
+    alert("Error: " + response.error.message);
+  } else if (response?.proposal) {
+    console.log("barrier", response.proposal.contract_details?.barrier);
+    setpayout0(response.proposal.payout);
+    setPrice(response.proposal.contract_details?.barrier);
+  } else {
+    alert("Unknown error occurred.");
+  }
   })
 
   object['contract_type'] = sell
   sendMessage(object , (response)=>{
     setpayout1(response?.proposal?.payout)
   })
+
+
+
+  setCurrency(defaultAccount?.currency)
     // or make an API call here
-  }, [startTime, durationType, duration, stakeType, stake, market, tradeType]);
+  }, [startTime, durationType, duration, stakeType, stake, market, tradeType , defaultAccount]);
   
   return (
     <div className="mb-6">
 
+      {price !== 0 && (
+                <div className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-lg inline-block mb-4">
+                  Current Price: <span className="font-semibold">{price}</span>
+                </div>
+              )}
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="flex flex-col space-y-1">
                 <label className="text-xs text-gray-500">Market</label>
-                <Select value={market} onValueChange={setMarket}>
+                <Select defaultValue={markets[0]?.symbol} onValueChange={setMarket}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select market" />
                   </SelectTrigger>
                   <SelectContent>
                     {markets.map((index) => (
-                    <SelectItem key={index} value={index.symbol}>
-                    {index.display_name}
-                    </SelectItem>
-                ))}
-        
-                    
+                      <SelectItem key={index.symbol} value={index.symbol}>
+                        {index.display_name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -246,18 +284,25 @@ sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
         </div>
         
         <div className="w-1/3">
-          <label className="text-xs text-gray-500 mb-1 block">&nbsp;</label>
-          <Input 
+        <label className="text-xs text-gray-500 mb-1 block">Barrier</label>
+
+        {/* <Input 
             type="text" 
             className="rounded-none border-x-0 text-center" 
-            value={duration}
-            onChange={handleDurationChange}
-          />
-        </div>
+            value={stake}
+            onChange={handleStakeChange}
+          /> */}
+        <Input 
+          type="text" 
+          className="rounded-none border-x-0 text-center" 
+          value={barrier}
+          onChange={handleBarrierChange}
+        />
+      </div>
         
         <div className="w-1/3">
           <label className="text-xs text-gray-500 mb-1 block">&nbsp;</label>
-          <Select value={durationType} onValueChange={setDurationType}>
+          <Select value={durationType} onValueChange={setDurationType} defaultValue="t">
             <SelectTrigger className="rounded-l-none">
               <SelectValue placeholder="ticks" />
             </SelectTrigger>
@@ -270,7 +315,10 @@ sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
           </Select>
         </div>
       </div>
-      
+
+
+
+
       <div className="text-xs text-gray-500 ml-3 mb-4">
         Minimum: 1
       </div>
@@ -289,15 +337,6 @@ sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
           </Select>
         </div>
         
-        <div className="w-1/3">
-          <label className="text-xs text-gray-500 mb-1 block">&nbsp;</label>
-          <Input 
-            type="text" 
-            className="rounded-none border-x-0 text-center" 
-            value={stake}
-            onChange={handleStakeChange}
-          />
-        </div>
         
         <div className="w-1/3">
           <label className="text-xs text-gray-500 mb-1 block">&nbsp;</label>
@@ -306,9 +345,9 @@ sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
               <SelectValue placeholder="USD" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="USD">USD</SelectItem>
-              <SelectItem value="EUR">EUR</SelectItem>
-              <SelectItem value="GBP">GBP</SelectItem>
+              <SelectItem value={currency}>{currency}</SelectItem>
+              {/* <SelectItem value="EUR">EUR</SelectItem>
+              <SelectItem value="GBP">GBP</SelectItem> */}
             </SelectContent>
           </Select>
         </div>
@@ -381,6 +420,7 @@ sendMessage({"proposal_open_contract":1,"subscribe":1,"passthrough":{}})
           <div className="text-center text-xs text-gray-500">
             Net profit: 15.17 USD | Return 94.8%
           </div>
+          
         </div>
       </div>
       <Snackbar message={"bonjour"} duration={2} onClose={() => setSnackbarMessage('')}></Snackbar>
