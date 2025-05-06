@@ -15,6 +15,9 @@ import {
 } from "./ui/select"
 import useWebSocket from "../hooks/useWebSocket";
 import useAuth from "../hooks/useAuth";
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+} from 'recharts';
 
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 import Snackbar from "./ui/snackbar";
@@ -25,7 +28,7 @@ const TradeForm = () => {
   const [stakeType, setStakeType] = useState("stake");
   const [stake, setStake] = useState("1.00");
   const [currency, setCurrency] = useState("USD");
-  const [market, setMarket] = useState("bear");
+  const [market, setMarket] = useState("R_100");
   const [tradeType, setTradeType] = useState("rise-fall");
   const [markets, setMarkets] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
@@ -34,6 +37,13 @@ const TradeForm = () => {
   const [price, setPrice] = useState<any>(0);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [barrier, setBarrier] = useState("");
+  const [priceHistory, setChart] = useState([
+    { time: 1, price: 10 },
+    { time: 2, price: 50 },
+    { time: 3, price: 30 },
+    { time: 4, price: 15 }
+  ]);
+  
 
 
   const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
@@ -41,12 +51,15 @@ const TradeForm = () => {
     setDuration(e.target.value);
   };
   
-  const handleStakeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setStake(value)
-  
-   
+  const handleStakeChange = (value: string) => {
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) {
+      setStake(String(parsed));
+    } else {
+      setStake("0"); // or empty string if you want to allow clearing
+    }
   };
+  
   
   const { isConnected,sendMessage, lastMessage } = useWebSocket();
 
@@ -68,6 +81,18 @@ const TradeForm = () => {
       return [];
     }
   }
+
+
+  useEffect(() => {
+    if (lastMessage !== null && lastMessage.msg_type === "tick") {
+      const tick = lastMessage.tick;
+      if (tick && tick.quote) {
+        console.log('zebbbi')
+        setChart(prev => [...prev.slice(-19), { time: new Date(tick.epoch * 1000).toLocaleTimeString(), price: tick.quote }]);
+        setPrice(tick.quote); // Update the price display
+      }
+    }
+  }, [lastMessage]);
 
 
 
@@ -103,7 +128,7 @@ if (tradeType=='ONETOUCH'){
     "passthrough":{
       "subscribe":1
     },
-    "req_id": 47
+
 }
 
 sendMessage(object , (response)=>{
@@ -146,6 +171,7 @@ sendMessage(object , (response)=>{
 
     if (isConnected && isLoggedIn){
 
+
     sendMessage( markets_req, (response)=>{
         console.log("markets",response)
         setMarkets(response.active_symbols)
@@ -187,6 +213,13 @@ sendMessage(object , (response)=>{
       "symbol": market,
       // "barrier": 2
   }
+  if (isConnected){
+
+
+    sendMessage({
+      "ticks": market,
+      "subscribe": 1
+  })
   sendMessage(object , (response)=>{
 
 
@@ -208,12 +241,49 @@ sendMessage(object , (response)=>{
 
 
 
-  setCurrency(defaultAccount?.currency)
+  setCurrency(defaultAccount?.currency)}
     // or make an API call here
-  }, [startTime, durationType, duration, stakeType, stake, market, tradeType , defaultAccount]);
+  }, [startTime, durationType, duration, stakeType, stake, market, tradeType , defaultAccount , isConnected]);
+
+
+
+  useEffect(() => {
+
+
+    setChart([]);
+
+
+    if(isConnected){
+
+    console.log(Symbol)
+    sendMessage({"ticks": Symbol,
+      "subscribe": 1
+  })}
+  },[Symbol])
   
   return (
     <div className="mb-6">
+
+
+
+<div className="w-24 h-24 mb-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={priceHistory}>
+            <XAxis dataKey="time" hide />
+            <YAxis domain={['auto', 'auto']} hide />
+            <Tooltip contentStyle={{ fontSize: '0.75rem' }} />
+            <Line
+              type="monotone"
+              dataKey="price"
+              stroke="#10b981"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
 
       {price !== 0 && (
                 <div className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-lg inline-block mb-4">
@@ -224,12 +294,12 @@ sendMessage(object , (response)=>{
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="flex flex-col space-y-1">
                 <label className="text-xs text-gray-500">Market</label>
-                <Select defaultValue={markets[0]?.symbol} onValueChange={setMarket}>
+                <Select defaultValue={"R_100"} onValueChange={setMarket}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select market" />
+                    <SelectValue placeholder="volatility 100 index" />
                   </SelectTrigger>
                   <SelectContent>
-                    {markets.map((index) => (
+                    {markets?.map((index) => (
                       <SelectItem key={index.symbol} value={index.symbol}>
                         {index.display_name}
                       </SelectItem>
@@ -295,8 +365,8 @@ sendMessage(object , (response)=>{
         <Input 
           type="text" 
           className="rounded-none border-x-0 text-center" 
-          value={barrier}
-          onChange={handleBarrierChange}
+          value={duration}
+          onChange={handleDurationChange}
         />
       </div>
         
@@ -304,7 +374,7 @@ sendMessage(object , (response)=>{
           <label className="text-xs text-gray-500 mb-1 block">&nbsp;</label>
           <Select value={durationType} onValueChange={setDurationType} defaultValue="t">
             <SelectTrigger className="rounded-l-none">
-              <SelectValue placeholder="ticks" />
+              <SelectValue  placeholder="ticks" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="t">ticks</SelectItem>
@@ -336,6 +406,12 @@ sendMessage(object , (response)=>{
             </SelectContent>
           </Select>
         </div>
+        &nbsp;
+        <Input      
+        className="rounded-none border-x-0 text-center mt-5"  
+        placeholder="1.0"
+        value={stake}
+        onChange={(e) => handleStakeChange(e.target.value)}/>
         
         
         <div className="w-1/3">
