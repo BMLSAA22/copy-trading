@@ -21,10 +21,13 @@ import {
 
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 import Snackbar from "./ui/snackbar";
+import { Dialog , DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+
+
 const TradeForm = () => {
   const [startTime, setStartTime] = useState("now");
   const [durationType, setDurationType] = useState("t");
-  const [duration, setDuration] = useState("1");
+  const [duration, setDuration] = useState("10");
   const [stakeType, setStakeType] = useState("stake");
   const [stake, setStake] = useState("1.00");
   const [currency, setCurrency] = useState("USD");
@@ -43,7 +46,16 @@ const TradeForm = () => {
     { time: 3, price: 30 },
     { time: 4, price: 15 }
   ]);
+
+
+const [selectedProposal, setSelectedProposal] = useState(null);
+const [isDialogOpen, setIsDialogOpen] = useState(false);
+
   
+const handleSelectProposal = (proposal) => {
+  setSelectedProposal(proposal);
+  setIsDialogOpen(true);
+};
 
 
   const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
@@ -92,6 +104,14 @@ const TradeForm = () => {
         setPrice(tick.quote); // Update the price display
       }
     }
+
+    if (lastMessage !== null && lastMessage.msg_type === 'proposal_open_contract'){
+
+      setSelectedProposal(lastMessage.proposal_open_contract)
+      console.log(selectedProposal)
+      console.log("proposal")
+    
+    }
   }, [lastMessage]);
 
 
@@ -113,7 +133,7 @@ if (tradeType=='ONETOUCH'){
   const object = {
     "buy_contract_for_multiple_accounts": "1",
     "tokens": [...tokens , defaultAccount.token],
-    "price": 1,
+    "price":stake,
     "parameters": {
         "amount": stake,
         "basis": stakeType,
@@ -125,6 +145,7 @@ if (tradeType=='ONETOUCH'){
         "selected_tick": 2,
         // "barrier": 2
     },
+    // "subscribe":1,
     "passthrough":{
       "subscribe":1
     },
@@ -148,6 +169,19 @@ sendMessage(object , (response)=>{
       failed.forEach((item, idx) => {
           alertMessage += `🔸 Token: ${item.token}\n   Reason: ${item.message_to_client}\n\n`;
       });
+  }
+
+  if (results){
+    console.log('contract_id' , results[0].contract_id)
+    let contract_id = results[0].contract_id
+    sendMessage({
+      
+        "proposal_open_contract": 1,
+        "contract_id": contract_id,
+        "subscribe": 1
+    
+    })
+    setIsDialogOpen(true)
   }
   
   alert(alertMessage);
@@ -224,7 +258,7 @@ sendMessage(object , (response)=>{
 
 
    if (response?.error) {
-    alert("Error: " + response.error.message);
+    console.log('error')
   } else if (response?.proposal) {
     console.log("barrier", response.proposal.contract_details?.barrier);
     setpayout0(response.proposal.payout);
@@ -267,6 +301,42 @@ sendMessage(object , (response)=>{
 
 
 <div className="w-24 h-24 mb-2">
+<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+  <DialogContent className="bg-white p-6 rounded-lg shadow-lg">
+    <DialogHeader>
+      <DialogTitle>Contract Summary</DialogTitle>
+    </DialogHeader>
+    {selectedProposal ? (
+      <div className="space-y-4">
+        <div className="flex justify-between">
+          <p><strong>Contract Type:</strong> {selectedProposal?.display_value?.includes("higher") ? "Rise" : "Fall"}</p>
+          <p><strong>Payout:</strong> ${selectedProposal?.payout.toFixed(2)}</p>
+        </div>
+        <div className="flex justify-between">
+          <p><strong>Entry Spot:</strong> {selectedProposal?.entry_spot_display_value}</p>
+          <p><strong>Current Spot:</strong> {selectedProposal?.current_spot_display_value}</p>
+        </div>
+        <div className="flex justify-between">
+          <p><strong>Profit:</strong> ${selectedProposal?.profit}</p>
+          <p><strong>profit_percentage:</strong> ${selectedProposal?.profit_percentage}</p>
+        </div>
+        <div className="flex justify-between">
+          <p><strong>Expiration:</strong> {new Date(selectedProposal?.date_expiry * 1000).toLocaleString()}</p>
+          <p><strong>Status:</strong> {selectedProposal?.status}</p>
+        </div>
+        <div>
+          <strong>Transaction ID:</strong> {selectedProposal?.transaction_ids.buy}
+        </div>
+      </div>
+    ) : (
+      <div>Loading contract details...</div> // This shows while the data is being fetched or if there's no data
+    )}
+  </DialogContent>
+</Dialog>
+
+
+
+
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={priceHistory}>
             <XAxis dataKey="time" hide />
