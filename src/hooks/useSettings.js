@@ -29,12 +29,10 @@ const useSettings = () => {
                 { get_settings: 1 },
                 (response) => {
                     if (response.error) {
-                        console.error('Failed to fetch settings:', response.error);
                         setError(response.error);
                         setIsLoading(false);
                         reject(response.error);
                     } else {
-                        console.log('Settings received:', response.get_settings);
                         setSettings(response.get_settings);
                         setError(null);
                         setIsLoading(false);

@@ -84,7 +84,7 @@ const Header = () => {
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <img src={derivIcon} alt="Deriv" className="w-6 h-6" />
-                        <Text size="lg" bold>
+                        <Text size="lg hidden sm:block" bold>
                             Copy Trading
                         </Text>
                     </div>

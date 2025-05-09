@@ -15,30 +15,31 @@ import {
 const AccountSelector = ({ accounts, selected, onChange }) => {
   const { logout } = useLogout();
   const { defaultAccount } = useAuth();
-  const { sendMessage } = useWebSocket();
+  const { lastMessage , sendMessage } = useWebSocket();
   const [accountsWithBalance, setAccountsWithBalance] = useState([]);
+
+  const fetchBalances = async () => {
+    const updatedAccounts = await Promise.all(
+      accounts.map((acc) => {
+        return new Promise((resolve) => {
+          if (acc?.token) {
+            sendMessage({ authorize: acc.token }, (res) => {
+              if (res?.authorize?.balance !== undefined) {
+                acc.balance = res.authorize.balance;
+              }
+              resolve(acc);
+            });
+          } else {
+            resolve(acc);
+          }
+        });
+      })
+    );
+    setAccountsWithBalance(updatedAccounts);
+  };
 
   // 🔁 Fetch balances for all accounts
   useEffect(() => {
-    const fetchBalances = async () => {
-      const updatedAccounts = await Promise.all(
-        accounts.map((acc) => {
-          return new Promise((resolve) => {
-            if (acc?.token) {
-              sendMessage({ authorize: acc.token }, (res) => {
-                if (res?.authorize?.balance !== undefined) {
-                  acc.balance = res.authorize.balance;
-                }
-                resolve(acc);
-              });
-            } else {
-              resolve(acc);
-            }
-          });
-        })
-      );
-      setAccountsWithBalance(updatedAccounts);
-    };
 
     if (accounts.length > 0) {
       fetchBalances();
@@ -47,7 +48,7 @@ const AccountSelector = ({ accounts, selected, onChange }) => {
     if (defaultAccount) {
       sendMessage({ authorize: defaultAccount.token });
     }
-  }, [accounts]);
+  }, [accounts ]);
 
   // 🔒 Logout
   const handleLogout = async () => {
@@ -67,6 +68,20 @@ const AccountSelector = ({ accounts, selected, onChange }) => {
    })
   };
 
+
+  useEffect(() => {
+    sendMessage({
+        "balance": 1,
+        "subscribe": 1, 
+         "account":"all"
+    } , response=>{console.log('balance change ' , response)} )
+  },[])
+  useEffect(() => {
+    if (lastMessage?.msg_type == 'balance'){
+        fetchBalances()
+    }
+    
+  },[lastMessage])
   return (
     <div className="flex items-center gap-3 px-4 py-2 bg-gray-100 rounded-md max-w-fit shadow-sm">
       <Select
