@@ -22,7 +22,7 @@ const TokenManagement = () => {
     const [lastCreatedToken, setLastCreatedToken] = useState(null);
     const [error, setError] = useState("");
     const [isValidInput, setIsValidInput] = useState(true);
-    const { sendMessage } = useWebSocket();
+    const { sendMessage , isConnected} = useWebSocket();
         const {
             settings,
             isLoading: settingsLoading,
@@ -51,7 +51,6 @@ const TokenManagement = () => {
         try {
           const tokensRaw = localStorage.getItem('tokens');
           const tokens = tokensRaw ? JSON.parse(tokensRaw) : [];
-          console.log('toookens' , tokens)
       
           if (!Array.isArray(tokens)) {
             throw new Error('Stored value is not an array');
@@ -64,14 +63,34 @@ const TokenManagement = () => {
         }
       }
 
-    useEffect(() => {
-        // sendMessage({ copytrading_list: 1}, (response) => {
-        //     setCopiers(response.copytrading_list.copiers)})
+      useEffect(() => {
+        const fetchCopiers = async () => {
+          if (defaultAccount) {
+            const original_token = defaultAccount.token;
+            const tokens = getTokensFromLocalStorage();
+            const copierData = [];
 
+            for (const token of tokens) {
+                console.log(token)
+            const data = await new Promise((resolve) => {
+                sendMessage({ authorize: token }, (response) => {
+                    console.log("response" , response)
+                const balance = response.authorize?.balance || 0;
+                resolve({ token, balance });
+                });
+            });
 
-        setCopiers(getTokensFromLocalStorage())
-        console.log("copiers" , copiers)
-    }, []);
+            copierData.push(data);
+            }
+      
+            setCopiers(copierData);
+            console.log("copiers", copierData);
+            sendMessage({ authorize: original_token })
+          }
+        };
+      
+        fetchCopiers();
+      }, [defaultAccount]);
 
     const handleCreateToken = async () => {
         if (!tokenName.trim()) return;
@@ -122,12 +141,23 @@ const TokenManagement = () => {
     // };
 
     function handleDeleteToken(tokenToDelete) {
+        // Remove the token from localStorage
         const existingTokens = getTokensFromLocalStorage().filter(
-          (token) => token !== tokenToDelete
+          (token) => token !== tokenToDelete.token
         );
+      
+        // Update localStorage with the new tokens list
         localStorage.setItem('tokens', JSON.stringify(existingTokens));
-        setCopiers(existingTokens); // assuming copiers is your local state
+      
+        // Filter out the copier data related to the deleted token
+        const updatedCopiers = copiers.filter(
+          (copier) => copier.token !== tokenToDelete.token
+        );
+      
+        // Update state with the new list of copiers
+        setCopiers(updatedCopiers);
       }
+      
 
 
     function addTokenToLocalStorage() {
@@ -149,9 +179,24 @@ const TokenManagement = () => {
           // If parsing failed or it's not an array, reset to a new array
           existingTokens = [];
         }
-      
-        existingTokens.push(token);
-        setCopiers(existingTokens)
+        
+        let balance = 0 
+        if (isConnected && defaultAccount) {
+            sendMessage({ authorize: token }, (rsp) => {
+              const balance = rsp.authorize?.balance || 0;
+          
+              // Revert to default token
+              sendMessage({ authorize: defaultAccount.token });
+          
+              // Update local storage
+              const existingTokens = getTokensFromLocalStorage();
+              existingTokens.push(token);
+              localStorage.setItem('tokens', JSON.stringify(existingTokens));
+          
+              // Append to copiers
+              setCopiers(prev => [...prev, { token, balance }]);
+            });
+          }
         localStorage.setItem('tokens', JSON.stringify(existingTokens));
       }
       
@@ -235,7 +280,7 @@ const TokenManagement = () => {
                                   <div className="flex items-center gap-2">
                                     <SectionMessage
                                       status="warning"
-                                      message={token}
+                                      message={token.token + '    account balance:' + token.balance}
                                     />
                                   </div>
                                   <button
