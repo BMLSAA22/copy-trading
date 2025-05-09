@@ -638,8 +638,9 @@ const TradeForm = () => {
   const openTrade = (direction: string) => {
     setTradeDirection(direction);
     let type = 0;
+    console.log('trade type' , 'direction')
     if (direction == 'rise') {type = 0} else{type = 1}
-    handlePurchase(0);
+    handlePurchase(type);
     setTradeOpen(true);
   };
   
