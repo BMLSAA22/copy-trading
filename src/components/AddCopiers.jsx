@@ -10,7 +10,9 @@ import TokenManagement from "./TokenManagement";
 import Settings from "./Settings";
 import TraderDesktopNavigation from "./TraderDesktopNavigation";
 import TraderMobileNavigation from "./TraderMobileNavigation";
-import { useNavigate } from "react-router-dom";
+import { sha256 } from "js-sha256";
+
+const PASSWORD_HASH = "b2563cb5a4cbbe05d50c3d8098f8a3f1f9546a2a73ce7064e5c3663f33e4a3c6"; // Hash of your real password
 
 const AddCopiers = ({ settings, updateSettings, fetchSettings }) => {
     const { traders, isLoading: tradersLoading } = useCopyTradersList();
@@ -20,21 +22,20 @@ const AddCopiers = ({ settings, updateSettings, fetchSettings }) => {
     const [passwordInput, setPasswordInput] = useState("");
     const [error, setError] = useState("");
 
-    const navigate = useNavigate();
-    const correctPassword = "supersecret123"; // Set your access password
-
     const handlePasswordSubmit = (e) => {
         e.preventDefault();
-        if (passwordInput === correctPassword) {
+        setError("");
+
+        const inputHash = sha256(passwordInput);
+        if (inputHash === PASSWORD_HASH) {
             setAccessGranted(true);
         } else {
-            setError("Incorrect password. Try again.");
-            setPasswordInput("");
+            setError("Incorrect password.");
         }
     };
 
     const handleCancel = () => {
-        window.location.reload(); // Go back to previous page
+        window.location.reload();
     };
 
     const handleStartTrading = async () => {
@@ -51,7 +52,7 @@ const AddCopiers = ({ settings, updateSettings, fetchSettings }) => {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md text-center">
                     <h2 className="text-2xl font-semibold mb-4">Protected Page</h2>
-                    <p className="mb-6 text-gray-600">Please enter the password to continue.</p>
+                    <p className="mb-6 text-gray-600">Please enter the password to access this page.</p>
                     <form onSubmit={handlePasswordSubmit}>
                         <input
                             type="password"
@@ -100,9 +101,11 @@ const AddCopiers = ({ settings, updateSettings, fetchSettings }) => {
                     onMenuSelect={setSelectedMenu}
                 />
                 <div className="flex-1 pb-20 md:pb-0">
-                    {selectedMenu === "statistics" && <TraderStatistics />}
-                    {selectedMenu === "tokens" && <TokenManagement />}
-                    {selectedMenu === "settings" && (
+                    {selectedMenu === "statistics" ? (
+                        <TraderStatistics />
+                    ) : selectedMenu === "tokens" ? (
+                        <TokenManagement />
+                    ) : (
                         <Settings
                             settings={settings}
                             updateSettings={updateSettings}
