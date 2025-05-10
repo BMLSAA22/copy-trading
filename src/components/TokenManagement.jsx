@@ -55,7 +55,6 @@ const TokenManagement = () => {
           if (!Array.isArray(tokens)) {
             throw new Error('Stored value is not an array');
           }
-          console.log('heeere' , tokens)
           return tokens;
         } catch (error) {
           console.warn('Failed to parse tokens from localStorage:', error);
@@ -71,10 +70,8 @@ const TokenManagement = () => {
             const copierData = [];
 
             for (const token of tokens) {
-                console.log(token)
             const data = await new Promise((resolve) => {
                 sendMessage({ authorize: token }, (response) => {
-                    console.log("response" , response)
                 const balance = response.authorize?.balance || 0;
                 resolve({ token, balance });
                 });
@@ -84,7 +81,6 @@ const TokenManagement = () => {
             }
       
             setCopiers(copierData);
-            console.log("copiers", copierData);
             sendMessage({ authorize: original_token })
           }
         };
@@ -108,8 +104,7 @@ const TokenManagement = () => {
                     
                     await updateSettings({allow_copiers : 0})
                     sendMessage({ copy_start: defaultAccount.token }, (startRes) => {
-                        console.log('copy start ' ,startRes )
-                         
+                        
 
 
                      sendMessage({ authorize: defaultAccount.token}, (listRes2) => {

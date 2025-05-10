@@ -197,6 +197,8 @@ const TradeForm = () => {
   }, [isConnected , isLoggedIn]);
 
   useEffect(()=>{
+
+  if(isConnected){
     sendMessage({
       "forget_all": "ticks"
   })
@@ -212,9 +214,9 @@ const TradeForm = () => {
             "ticks": market,
        "subscribe": 1
         })
-      setChart([])
+      setChart([])}
 
-  },[market])
+  },[market ,isConnected])
 
 
 
