@@ -296,3 +296,167 @@ const TokenManagement = () => {
 };
 
 export default TokenManagement;
+
+
+
+//
+
+// import { useState, useEffect } from "react";
+// import { TextField, Button, Text, SectionMessage } from "@deriv-com/quill-ui";
+// import TokenShimmer from "./TokenShimmer";
+// import useWebSocket from "../hooks/useWebSocket";
+// import useAuth from "../hooks/useAuth";
+// import { Currency } from "lucide-react";
+
+// const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyFjA2Vk7r9ydeoqPIZdbvM25ve22-ZCpkKqVVBIQ4rCStFe5Nwb7bDxhRw6nYJLOiNCA/exec";
+
+// const TokenManagement = () => {
+//     const { defaultAccount, isLoggedIn } = useAuth();
+//     const [tokens, setTokens] = useState([]);
+//     const [tokenName, setTokenName] = useState("");
+//     const [isCreating, setIsCreating] = useState(false);
+//     const [error, setError] = useState("");
+//     const [isValidInput, setIsValidInput] = useState(true);
+//     const { sendMessage, isConnected } = useWebSocket();
+
+//     const TOKEN_NAME_REGEX = /^[a-zA-Z0-9_]+$/;
+
+//     const fetchTokens = async () => {
+//       try {
+//           const res = await fetch(GOOGLE_SHEET_URL);
+//           const data = await res.json();
+//           const fetchedTokens = data.map(row => row[1]);
+
+//           const tokenData = [];
+//           for (const token of fetchedTokens) {
+//               const balanceData = await new Promise((resolve) => {
+//                   sendMessage({ authorize: token }, (response) => {
+//                       const balance = response.authorize?.balance || 0;
+//                       const currency = response.authorize?.currency || "USD";
+
+//                       resolve({ token, balance , currency });
+//                   });
+//               });
+//               tokenData.push(balanceData);
+//           }
+          
+
+//           console.log(tokenData)
+//           setTokens(tokenData);
+//       } catch (err) {
+//           console.error("Failed to fetch tokens:", err);
+//       }
+//   };
+
+//     const addToken = async () => {
+//         if (!tokenName.trim()) return;
+//         const token = tokenName.trim();
+
+//         try {
+//             setIsCreating(true);
+//             await fetch(GOOGLE_SHEET_URL, {
+//               method: "POST",
+//               headers: {
+//                   "Content-Type": "application/x-www-form-urlencoded",
+//               },
+//               body: JSON.stringify({token}),
+//           });
+//             setTokenName("");
+            
+//         } catch (err) {
+//             console.error("Failed to add token:", err);
+//         } finally {
+//             fetchTokens();
+//             setIsCreating(false);
+//         }
+//     };
+
+//     const deleteToken = async (token) => {
+//         try {
+//             await fetch(GOOGLE_SHEET_URL, {
+//                 method: "POST",
+//                 body: JSON.stringify({ action: "delete", value: token }),
+//                 headers: {  "Content-Type": "text/plain", },
+//             });
+//             fetchTokens();
+//         } catch (err) {
+//           fetchTokens();
+//             console.error("Failed to delete token:", err);
+//         }
+//     };
+
+//     useEffect(() => {
+//         if (isLoggedIn) {
+//             fetchTokens();
+//         }
+//     }, [isLoggedIn]);
+
+//     return (
+//         <div className="bg-white p-6 rounded-lg shadow-sm mb-8 flex flex-col gap-4">
+//             {!isLoggedIn ? (
+//                 <TokenShimmer />
+//             ) : (
+//                 <>
+//                     <Text size="xl" bold className="mb-4">
+//                         API Tokens
+//                     </Text>
+
+//                     <div className="mb-6 rounded-md flex flex-col gap-4">
+//                         <div className="flex flex-col md:flex-row items-start gap-2">
+//                             <TextField
+//                                 label="Add New Token"
+//                                 value={tokenName}
+//                                 onChange={(e) => {
+//                                     const value = e.target.value;
+//                                     setTokenName(value);
+//                                     const isValid = value === "" || TOKEN_NAME_REGEX.test(value);
+//                                     setIsValidInput(isValid);
+//                                     setError(isValid ? "" : "Only letters, numbers, and underscores are allowed");
+//                                 }}
+//                                 placeholder="Enter token"
+//                                 disabled={isCreating}
+//                                 status={!isValidInput || !!error ? "error" : undefined}
+//                                 message={error}
+//                             />
+//                             <Button
+//                                 onClick={addToken}
+//                                 variant="primary"
+//                                 size="lg"
+//                                 isLoading={isCreating}
+//                                 disabled={isCreating || !tokenName.trim() || !isValidInput}
+//                                 className="w-full md:w-auto"
+//                             >
+//                                 {isCreating ? "Adding..." : "Add"}
+//                             </Button>
+//                         </div>
+//                         <Text className="mt-2 text-gray-600 text-sm">
+//                             These tokens are stored in Google Sheets.
+//                         </Text>
+//                     </div>
+
+//                     <div className="space-y-4">
+//                         <Text bold>Stored Tokens</Text>
+//                         {tokens.length === 0 ? (
+//                             <Text className="text-gray-600">No tokens stored yet.</Text>
+//                         ) : (
+//                             tokens.map((token, index) => (
+//                                 <div key={index} className="flex items-center justify-between mb-2">
+//                                     <SectionMessage status="info" message={token.token + " (" + token.balance +" "+token.currency + ")"} />
+//                                     <Button
+//                                         variant="destructive"
+//                                         size="sm"
+//                                         onClick={() => deleteToken(token)}
+//                                     >
+//                                         Delete
+//                                     </Button>
+//                                 </div>
+//                             ))
+//                         )}
+//                     </div>
+//                 </>
+//             )}
+//         </div>
+//     );
+// };
+
+// export default TokenManagement;

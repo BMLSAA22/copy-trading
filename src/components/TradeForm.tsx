@@ -47,7 +47,8 @@ const TradeForm = () => {
   const [priceHistory, setChart] = useState([]);
   const [selectedProposal, setSelectedProposal] = useState(null);
   const [contract, setContract] = useState("");
-    const [tradeType, setTradeType] = useState("rise-fall");
+  const [tradeType, setTradeType] = useState("rise-fall");
+  const [pipSize , setPip] = useState(2)
   
   
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -202,12 +203,15 @@ const TradeForm = () => {
     sendMessage({
       "forget_all": "ticks"
   })
-  sendMessage({"ticks_history":market,"end":"latest","start":1,"style":"ticks","count":21},resp=>{
+  sendMessage({"ticks_history":market,"end":"latest","start":1,"style":"ticks","count":21 , adjust_start_time:1},resp=>{
     const combined = resp.history.prices.map((price, index) => ({
       price,
       time: resp.history.times[index]
     }));
     setChart(combined)
+    setPip(resp.pip_size)
+
+    
     
     console.log("data" ,resp.history)})
     sendMessage({
@@ -267,13 +271,43 @@ const TradeForm = () => {
     //   </LineChart>
     // </ResponsiveContainer>
 
-    const LastDigitsRow = ({ data }) => {
+    // const LastDigitsRow = ({ data }) => {
+    //   return (
+    //     <div className="flex justify-between w-full absolute -top-8 px-1">
+    //       {data.map((d, i) => {
+    //         const lastDigit = String(d.price).split('.').pop().slice(-1);
+    
+    //         // Check if current digit is greater or smaller than the previous one
+    //         const isGreater = i > 0 && d.price > data[i - 1].price;
+    
+    //         return (
+    //           <div
+    //             key={i}
+    //             className={`text-sm w-[24px] h-[24px] rounded-md flex items-center justify-center 
+    //               ${isGreater ? 'bg-green-500' : 'bg-red-500'} text-white`}
+    //           >
+    //             {lastDigit}
+    //           </div>
+    //         );
+    //       })}
+    //     </div>
+    //   );
+    // };
+    
+
+    const LastDigitsRow = ({ data, pipSize }) => {
       return (
         <div className="flex justify-between w-full absolute -top-8 px-1">
           {data.map((d, i) => {
-            const lastDigit = String(d.price).split('.').pop().slice(-1);
+            const priceStr = String(d.price);
+            const decimalPart = priceStr.split('.')[1] || '';
     
-            // Check if current digit is greater or smaller than the previous one
+            // pipSize = 1 means first decimal place → index 0
+            const digitIndex = pipSize - 1;
+    
+            // Get digit at pip position or fallback to '0'
+            const pipDigit = decimalPart[digitIndex] || '0';
+    
             const isGreater = i > 0 && d.price > data[i - 1].price;
     
             return (
@@ -282,7 +316,7 @@ const TradeForm = () => {
                 className={`text-sm w-[24px] h-[24px] rounded-md flex items-center justify-center 
                   ${isGreater ? 'bg-green-500' : 'bg-red-500'} text-white`}
               >
-                {lastDigit}
+                {pipDigit}
               </div>
             );
           })}
@@ -295,7 +329,7 @@ const TradeForm = () => {
   return (
     <div className="mb-6 p-5 rounded">
      <div className="relative w-[320px] h-[170px] mt-10">
-        <LastDigitsRow data={priceHistory} />
+        <LastDigitsRow data={priceHistory} pipSize={pipSize} />
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={priceHistory}>
             <XAxis dataKey="time" hide />
