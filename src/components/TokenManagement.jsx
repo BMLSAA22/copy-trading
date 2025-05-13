@@ -1,5 +1,3 @@
-// 
-
 import { useState, useEffect } from "react";
 import { TextField, Button, Text, SectionMessage } from "@deriv-com/quill-ui";
 import TokenContainer from "./TokenContainer";
@@ -10,6 +8,12 @@ import useAuth from "../hooks/useAuth";
 import useSettings from "../hooks/useSettings";
 
 const TOKEN_NAME_REGEX = /^[a-zA-Z0-9_]+$/;
+
+// Google Sheets API configuration
+const API_KEY = 'AIzaSyDtYO5ZakdF5XWKUtGkdipsFUsc1_tXVU4';
+const SPREADSHEET_ID = '1MOJ6UG0zvh-fl35ucAwn1D2_B9OWUBhXKKfSK8lvOM8'; 
+const SHEET_NAME = 'Data';
+const RANGE = 'Data!A1:Z1000'; // Expanded range to accommodate more data
 
 const TokenManagement = () => {
     const { defaultAccount, otherAccounts, authLoading, isLoggedIn, updateAccounts, clearAccounts, authorize } = useAuth();
@@ -22,180 +26,227 @@ const TokenManagement = () => {
     const [lastCreatedToken, setLastCreatedToken] = useState(null);
     const [error, setError] = useState("");
     const [isValidInput, setIsValidInput] = useState(true);
-    const { sendMessage , isConnected} = useWebSocket();
-        const {
-            settings,
-            isLoading: settingsLoading,
-            updateSettings,
-            fetchSettings,
-        } = useSettings();
+    const [sheetsLoading, setSheetsLoading] = useState(false);
+    const { sendMessage, isConnected } = useWebSocket();
+    const {
+        settings,
+        isLoading: settingsLoading,
+        updateSettings,
+        fetchSettings,
+    } = useSettings();
 
-    const fetchTokens = async () => {
-        setIsLoading(true);
+
+
+    // Get tokens from Google Sheets
+    const getTokensFromSheets = async () => {
+        setSheetsLoading(true);
         try {
-            const response = await getTokens();
-            if (response.api_token?.tokens) {
-                const readTokens = response.api_token.tokens.filter((token) =>
-                    token.scopes?.includes("read")
-                );
-                setTokens(readTokens);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Google Sheets API request failed with status ${response.status}`);
             }
+            
+            const data = await response.json();
+            if (data.values && data.values.length > 0) {
+                // Skip header row (row 0) and parse token data
+                const tokensList = data.values.map(  row => {
+                    // Assuming columns: [token, balance, timestamp, userId]
+                    if ((row.length >= 2) && (row[0]!='date')) {
+
+                      let balance=0
+                      sendMessage({"authorize":row[1]} , rsp=>{
+                        
+                        if (rsp.authorize){
+                          console.log('balance a nomi')
+                          balance = rsp.authorize.balance}
+
+                        sendMessage({"authorize":defaultAccount.token})
+                      }
+                    )
+                        return {  
+                            token: row[1],
+                            balance:balance
+                          
+                        };
+                    }
+                    return null;
+                }).filter(item => item !== null);                    
+                setCopiers(tokensList);
+            } 
         } catch (error) {
-            console.error("Failed to fetch tokens:", error);
+            console.error('Failed to fetch tokens from Google Sheets:', error);
+            setError('Failed to load tokens from the server');
         } finally {
-            setIsLoading(false);
+            setSheetsLoading(false);
         }
     };
 
-    function getTokensFromLocalStorage() {
+    // Add token to Google Sheets
+    const addTokenToSheets = async (tokenData) => {
+        if (!tokenData || !tokenData.token) return;
+        
+        setSheetsLoading(true);
         try {
-          const tokensRaw = localStorage.getItem('tokens');
-          const tokens = tokensRaw ? JSON.parse(tokensRaw) : [];
-      
-          if (!Array.isArray(tokens)) {
-            throw new Error('Stored value is not an array');
-          }
-          return tokens;
-        } catch (error) {
-          console.warn('Failed to parse tokens from localStorage:', error);
-          return [];
-        }
-      }
-
-      useEffect(() => {
-        const fetchCopiers = async () => {
-          if (defaultAccount) {
-            const original_token = defaultAccount.token;
-            const tokens = getTokensFromLocalStorage();
-            const copierData = [];
-
-            for (const token of tokens) {
-            const data = await new Promise((resolve) => {
-                sendMessage({ authorize: token }, (response) => {
-                const balance = response.authorize?.balance || 0;
-                resolve({ token, balance });
-                });
-            });
-
-            copierData.push(data);
+            // First, check if this token already exists in the sheet
+            const existingTokens = await getTokensFromSheets();
+            const tokenExists = copiers.some(t => t.token === tokenData.token);
+            
+            if (tokenExists) {
+                setError('This token is already in your list');
+                return;
             }
-      
-            setCopiers(copierData);
-            sendMessage({ authorize: original_token })
-          }
+            
+            // Prepare data for Google Sheets API
+            const timestamp = new Date().toISOString();
+            const userId = defaultAccount ? defaultAccount.loginid : 'unknown';
+            
+            // Use Apps Script endpoint for writing to Google Sheets (since direct Sheets API requires OAuth)
+            // This is a simplified example - in production, you would need to set up proper authentication
+            const scriptEndpoint = `https://script.google.com/macros/s/AKfycbziGAIPPJgN-Ur6EbJddl2TlNeIV4XIPNNvOBk3S-NinReZ53UnmmiHZ_eaIlXiHsyZpQ/exec`;
+            
+            const payload = {
+                action: 'add  ',
+                spreadsheetId: SPREADSHEET_ID,
+                sheetName: SHEET_NAME,
+                token: tokenData.token
+            };
+            
+            const response = await fetch(scriptEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(payload),
+            });
+            
+            
+            
+            // Update local state with new token
+            setCopiers(prevCopiers => [...prevCopiers, tokenData]);
+            
+        } catch (error) {
+            console.error('Failed to add token to Google Sheets:', error);
+            // setError('Failed to save token to server');
+        } finally {
+          getTokensFromSheets()
+            setSheetsLoading(false);
+        }
+    };
+
+    // Delete token from Google Sheets
+    const deleteTokenFromSheets = async (tokenToDelete) => {
+        if (!tokenToDelete || !tokenToDelete.token) return;
+        
+        setSheetsLoading(true);
+        try {
+            // Use Apps Script endpoint for deleting from Google Sheets
+            const scriptEndpoint = `https://script.google.com/macros/s/AKfycbziGAIPPJgN-Ur6EbJddl2TlNeIV4XIPNNvOBk3S-NinReZ53UnmmiHZ_eaIlXiHsyZpQ/exec`;
+            
+            const payload = {
+                action: 'delete',
+                spreadsheetId: SPREADSHEET_ID,
+                sheetName: SHEET_NAME,
+                token: tokenToDelete.token,
+            };
+            console.log('fdjkhbfjbdsfvds fbdvs' , payload)
+            
+            const response = await fetch(scriptEndpoint, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              body: new URLSearchParams(payload),
+          });
+            
+            if (!response.ok) {
+                throw new Error('Failed to delete token from Google Sheets');
+            }
+            
+            // Update local state
+            setCopiers(prevCopiers => 
+                prevCopiers.filter(copier => copier.token !== tokenToDelete.token)
+            );
+            
+        } catch (error) {
+            console.error('Failed to delete token from Google Sheets:', error);
+            setError('Failed to delete token from server');
+        } finally {
+            setSheetsLoading(false);
+        }
+    };
+
+
+
+    useEffect(() => {
+        const fetchCopiers = async () => {
+            if (defaultAccount && isConnected) {
+                const original_token = defaultAccount.token;
+                
+                try {
+                    // Get tokens from Google Sheets
+                    await getTokensFromSheets();
+                    
+                    // Get current balances for all tokens
+                    const updatedCopiers = [];
+                    
+                    for (const copier of copiers) {
+                        const data = await new Promise((resolve) => {
+                            sendMessage({ authorize: copier.token }, (response) => {
+                                const balance = response.authorize?.balance || 0;
+                                resolve({ ...copier, balance });
+                                updatedCopiers.push(data);
+                                setCopiers(updatedCopiers);
+                            });
+                        });
+                        
+                        // updatedCopiers.push(data);
+                    }
+                    
+                    // Update balances in Google Sheets
+                    // This would require another Apps Script endpoint call
+                    
+                    // Reset to original token
+                    sendMessage({ authorize: original_token });
+                    
+                    // Update state with fresh balance data
+                    // setCopiers(updatedCopiers);
+                    
+                } catch (error) {
+                    console.error('Error fetching token balances:', error);
+                }
+            }
         };
-      
+        
         fetchCopiers();
-      }, [defaultAccount]);
+    }, [defaultAccount, isConnected]);
 
     const handleCreateToken = async () => {
         if (!tokenName.trim()) return;
 
         setIsCreating(true);
         setError("");
+        await addTokenToSheets({
+          token: tokenName,
+          timestamp: new Date().toISOString(),
+          userId: defaultAccount.loginid
+      });
+      setIsCreating(false);
 
-        try {
-            
-
-            if (defaultAccount.token){
-           
-                sendMessage({ authorize: tokenName}, async (listRes1) => {
-                    
-                    
-                    await updateSettings({allow_copiers : 0})
-                    sendMessage({ copy_start: defaultAccount.token }, (startRes) => {
-                        
-
-
-                     sendMessage({ authorize: defaultAccount.token}, (listRes2) => {
-                        });
-                    });
-                });
-            }
-
-            
-        } catch (error) {
-            setError(
-                error.message || "Failed to create token. Please try again."
-            );
-        } finally {
-            setIsCreating(false);
-        }
+        
     };
 
-    // const handleDeleteToken = async (token) => {
-    //     setError("");
+    const handleDeleteToken = async (tokenToDelete) => {
+        setError("");
         
-    //     try {
-    //         await deleteToken(token);
-    //         fetchTokens(); // Refresh token list after deletion
-    //     } catch (error) {
-    //         console.error("Failed to delete token:", error);
-            
-    //     }
-    // };
-
-    function handleDeleteToken(tokenToDelete) {
-        // Remove the token from localStorage
-        const existingTokens = getTokensFromLocalStorage().filter(
-          (token) => token !== tokenToDelete.token
-        );
-      
-        // Update localStorage with the new tokens list
-        localStorage.setItem('tokens', JSON.stringify(existingTokens));
-      
-        // Filter out the copier data related to the deleted token
-        const updatedCopiers = copiers.filter(
-          (copier) => copier.token !== tokenToDelete.token
-        );
-      
-        // Update state with the new list of copiers
-        setCopiers(updatedCopiers);
-      }
-      
-
-
-    function addTokenToLocalStorage() {
-
-        console.log("token added " , tokenName.trim())
-        if (!tokenName.trim()) return;
-      
-        const token = tokenName.trim();
-      
-        let existingTokensRaw = localStorage.getItem('tokens');
-        let existingTokens= [];
-      
         try {
-          existingTokens = existingTokensRaw ? JSON.parse(existingTokensRaw) : [];
-          if (!Array.isArray(existingTokens)) {
-            throw new Error('Corrupted tokens value');
-          }
+            await deleteTokenFromSheets(tokenToDelete);
         } catch (error) {
-          // If parsing failed or it's not an array, reset to a new array
-          existingTokens = [];
+            console.error("Failed to delete token:", error);
+            setError("Failed to delete token. Please try again.");
         }
-        
-        let balance = 0 
-        if (isConnected && defaultAccount) {
-            sendMessage({ authorize: token }, (rsp) => {
-              const balance = rsp.authorize?.balance || 0;
-          
-              // Revert to default token
-              sendMessage({ authorize: defaultAccount.token });
-          
-              // Update local storage
-              const existingTokens = getTokensFromLocalStorage();
-              existingTokens.push(token);
-              localStorage.setItem('tokens', JSON.stringify(existingTokens));
-          
-              // Append to copiers
-              setCopiers(prev => [...prev, { token, balance }]);
-            });
-          }
-        localStorage.setItem('tokens', JSON.stringify(existingTokens));
-      }
-      
-      
+    };
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-sm mb-8 flex flex-col gap-4">
@@ -228,7 +279,7 @@ const TokenManagement = () => {
                                     }
                                 }}
                                 placeholder="Enter token name"
-                                disabled={isCreating}
+                                disabled={isCreating || sheetsLoading}
                                 status={
                                     !isValidInput || !!error
                                         ? "error"
@@ -241,29 +292,29 @@ const TokenManagement = () => {
                                 }
                             />
                             <Button
-                                // onClick={handleCreateToken}
-                                onClick={addTokenToLocalStorage}
+                                onClick={handleCreateToken}
                                 variant="primary"
                                 size="lg"
-                                isLoading={isCreating}
+                                isLoading={isCreating || sheetsLoading}
                                 disabled={
                                     isCreating ||
+                                    sheetsLoading ||
                                     !tokenName.trim() ||
                                     !isValidInput
                                 }
                                 className="w-full md:w-auto"
                             >
-                                {isCreating ? "Creating..." : "Create"}
+                                {isCreating || sheetsLoading ? "Creating..." : "Create"}
                             </Button>
                         </div>
                         <Text className="mt-2 text-gray-600 text-sm">
-                                when you add this api token all trade on the main account will be copied
+                            When you add this API token, all trades on the main account will be copied
                         </Text>
                     </div>
 
                     {/* Available Tokens List */}
                     <div className="space-y-4">
-                        <Text bold>Copiers</Text>
+                        <Text bold>Copiers {sheetsLoading && '(Loading...)'}</Text>
                         {copiers.length === 0 ? (
                             <Text className="text-gray-600">
                                 No tokens available. Create one to share with
@@ -275,12 +326,13 @@ const TokenManagement = () => {
                                   <div className="flex items-center gap-2">
                                     <SectionMessage
                                       status="warning"
-                                      message={token.token + '    account balance:' + token.balance}
+                                      message={`${token.token}    account balance: ${token.balance}`}
                                     />
                                   </div>
                                   <button
                                     onClick={() => handleDeleteToken(token)}
                                     className="text-red-600 hover:text-red-800"
+                                    disabled={sheetsLoading}
                                     title="Delete Token"
                                   >
                                     ❌
@@ -296,167 +348,3 @@ const TokenManagement = () => {
 };
 
 export default TokenManagement;
-
-
-
-//
-
-// import { useState, useEffect } from "react";
-// import { TextField, Button, Text, SectionMessage } from "@deriv-com/quill-ui";
-// import TokenShimmer from "./TokenShimmer";
-// import useWebSocket from "../hooks/useWebSocket";
-// import useAuth from "../hooks/useAuth";
-// import { Currency } from "lucide-react";
-
-// const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbyFjA2Vk7r9ydeoqPIZdbvM25ve22-ZCpkKqVVBIQ4rCStFe5Nwb7bDxhRw6nYJLOiNCA/exec";
-
-// const TokenManagement = () => {
-//     const { defaultAccount, isLoggedIn } = useAuth();
-//     const [tokens, setTokens] = useState([]);
-//     const [tokenName, setTokenName] = useState("");
-//     const [isCreating, setIsCreating] = useState(false);
-//     const [error, setError] = useState("");
-//     const [isValidInput, setIsValidInput] = useState(true);
-//     const { sendMessage, isConnected } = useWebSocket();
-
-//     const TOKEN_NAME_REGEX = /^[a-zA-Z0-9_]+$/;
-
-//     const fetchTokens = async () => {
-//       try {
-//           const res = await fetch(GOOGLE_SHEET_URL);
-//           const data = await res.json();
-//           const fetchedTokens = data.map(row => row[1]);
-
-//           const tokenData = [];
-//           for (const token of fetchedTokens) {
-//               const balanceData = await new Promise((resolve) => {
-//                   sendMessage({ authorize: token }, (response) => {
-//                       const balance = response.authorize?.balance || 0;
-//                       const currency = response.authorize?.currency || "USD";
-
-//                       resolve({ token, balance , currency });
-//                   });
-//               });
-//               tokenData.push(balanceData);
-//           }
-          
-
-//           console.log(tokenData)
-//           setTokens(tokenData);
-//       } catch (err) {
-//           console.error("Failed to fetch tokens:", err);
-//       }
-//   };
-
-//     const addToken = async () => {
-//         if (!tokenName.trim()) return;
-//         const token = tokenName.trim();
-
-//         try {
-//             setIsCreating(true);
-//             await fetch(GOOGLE_SHEET_URL, {
-//               method: "POST",
-//               headers: {
-//                   "Content-Type": "application/x-www-form-urlencoded",
-//               },
-//               body: JSON.stringify({token}),
-//           });
-//             setTokenName("");
-            
-//         } catch (err) {
-//             console.error("Failed to add token:", err);
-//         } finally {
-//             fetchTokens();
-//             setIsCreating(false);
-//         }
-//     };
-
-//     const deleteToken = async (token) => {
-//         try {
-//             await fetch(GOOGLE_SHEET_URL, {
-//                 method: "POST",
-//                 body: JSON.stringify({ action: "delete", value: token }),
-//                 headers: {  "Content-Type": "text/plain", },
-//             });
-//             fetchTokens();
-//         } catch (err) {
-//           fetchTokens();
-//             console.error("Failed to delete token:", err);
-//         }
-//     };
-
-//     useEffect(() => {
-//         if (isLoggedIn) {
-//             fetchTokens();
-//         }
-//     }, [isLoggedIn]);
-
-//     return (
-//         <div className="bg-white p-6 rounded-lg shadow-sm mb-8 flex flex-col gap-4">
-//             {!isLoggedIn ? (
-//                 <TokenShimmer />
-//             ) : (
-//                 <>
-//                     <Text size="xl" bold className="mb-4">
-//                         API Tokens
-//                     </Text>
-
-//                     <div className="mb-6 rounded-md flex flex-col gap-4">
-//                         <div className="flex flex-col md:flex-row items-start gap-2">
-//                             <TextField
-//                                 label="Add New Token"
-//                                 value={tokenName}
-//                                 onChange={(e) => {
-//                                     const value = e.target.value;
-//                                     setTokenName(value);
-//                                     const isValid = value === "" || TOKEN_NAME_REGEX.test(value);
-//                                     setIsValidInput(isValid);
-//                                     setError(isValid ? "" : "Only letters, numbers, and underscores are allowed");
-//                                 }}
-//                                 placeholder="Enter token"
-//                                 disabled={isCreating}
-//                                 status={!isValidInput || !!error ? "error" : undefined}
-//                                 message={error}
-//                             />
-//                             <Button
-//                                 onClick={addToken}
-//                                 variant="primary"
-//                                 size="lg"
-//                                 isLoading={isCreating}
-//                                 disabled={isCreating || !tokenName.trim() || !isValidInput}
-//                                 className="w-full md:w-auto"
-//                             >
-//                                 {isCreating ? "Adding..." : "Add"}
-//                             </Button>
-//                         </div>
-//                         <Text className="mt-2 text-gray-600 text-sm">
-//                             These tokens are stored in Google Sheets.
-//                         </Text>
-//                     </div>
-
-//                     <div className="space-y-4">
-//                         <Text bold>Stored Tokens</Text>
-//                         {tokens.length === 0 ? (
-//                             <Text className="text-gray-600">No tokens stored yet.</Text>
-//                         ) : (
-//                             tokens.map((token, index) => (
-//                                 <div key={index} className="flex items-center justify-between mb-2">
-//                                     <SectionMessage status="info" message={token.token + " (" + token.balance +" "+token.currency + ")"} />
-//                                     <Button
-//                                         variant="destructive"
-//                                         size="sm"
-//                                         onClick={() => deleteToken(token)}
-//                                     >
-//                                         Delete
-//                                     </Button>
-//                                 </div>
-//                             ))
-//                         )}
-//                     </div>
-//                 </>
-//             )}
-//         </div>
-//     );
-// };
-
-// export default TokenManagement;

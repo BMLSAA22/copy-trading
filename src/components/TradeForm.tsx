@@ -49,6 +49,47 @@ const TradeForm = () => {
   const [contract, setContract] = useState("");
   const [tradeType, setTradeType] = useState("rise-fall");
   const [pipSize , setPip] = useState(2)
+
+  // Google Sheets API configuration
+const API_KEY = 'AIzaSyDtYO5ZakdF5XWKUtGkdipsFUsc1_tXVU4';
+const SPREADSHEET_ID = '1MOJ6UG0zvh-fl35ucAwn1D2_B9OWUBhXKKfSK8lvOM8'; 
+const SHEET_NAME = 'Data';
+const RANGE = 'Data!A1:Z1000'; // Expanded range to accommodate more data
+
+
+const getTokensFromSheets = async () => {
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Google Sheets API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.values || data.values.length <= 1) return [];
+
+    const tokenRows = data.values.slice(1); // Skip header row
+
+    const tokensList = await Promise.all(
+      tokenRows.map((row) => {
+        if (row.length >= 2 && row[0] !== 'date') {
+          const token = row[1];
+          return token
+        }
+        return null;
+      })
+    );
+
+
+    return tokensList.filter(Boolean); // remove nulls
+  } catch (error) {
+    console.error('Failed to fetch tokens from Google Sheets:', error);
+    return [];
+  }
+};
+
+
   
   
   const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +103,6 @@ const TradeForm = () => {
   const openTrade = (direction: string) => {
     setTradeDirection(direction);
     let type = 0;
-    console.log('trade type' , 'direction')
     if (direction == 'rise') {type = 0} else{type = 1}
     handlePurchase(type  );
     setTradeOpen(true);
@@ -160,7 +200,6 @@ const TradeForm = () => {
           // "contract_id":contract_id,
           "subscribe": 1,
         }
-        console.log('contract' , data)
   
         sendMessage(data , response =>{
           console.log('contract subscription response' , response)
@@ -176,19 +215,24 @@ const TradeForm = () => {
 
     useEffect(() => {
 
-    console.log("otheraccounts" , otherAccounts)
     const markets_req = {
         active_symbols: "brief",
         "product_type": "basic"
     }
-    setTokens(getTokensFromLocalStorage())
+
+    const fetchTokens = async () => {
+      const tokens = await getTokensFromSheets();
+      setTokens(tokens);
+    };
+    // 
+    
+    fetchTokens()
 
 
     if (isConnected && isLoggedIn){
 
 
     sendMessage( markets_req, (response)=>{
-        console.log("markets",response)
         const uniqueMarkets = Array.from(new Map(response.active_symbols.map(m => [m.symbol, m])).values());
 
         setMarkets(uniqueMarkets)
