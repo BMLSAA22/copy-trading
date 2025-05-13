@@ -38,51 +38,102 @@ const TokenManagement = () => {
 
 
     // Get tokens from Google Sheets
-    const getTokensFromSheets = async () => {
-        setSheetsLoading(true);
-        try {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}?key=${API_KEY}`;
-            const response = await fetch(url);
+    // const getTokensFromSheets = async () => {
+    //     setSheetsLoading(true);
+    //     try {
+    //         const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+    //         const response = await fetch(url);
             
-            if (!response.ok) {
-                throw new Error(`Google Sheets API request failed with status ${response.status}`);
-            }
+    //         if (!response.ok) {
+    //             throw new Error(`Google Sheets API request failed with status ${response.status}`);
+    //         }
             
-            const data = await response.json();
-            if (data.values && data.values.length > 0) {
-                // Skip header row (row 0) and parse token data
-                const tokensList = data.values.map(  row => {
-                    // Assuming columns: [token, balance, timestamp, userId]
-                    if ((row.length >= 2) && (row[0]!='date')) {
+    //         const data = await response.json();
+    //         if (data.values && data.values.length > 0) {
+    //             // Skip header row (row 0) and parse token data
+    //             const tokensList = data.values.map( async row => {
+    //                 // Assuming columns: [token, balance, timestamp, userId]
+    //                 if ((row.length >= 2) && (row[0]!='date')) {
 
-                      let balance=0
-                      sendMessage({"authorize":row[1]} , rsp=>{
+    //                   let balance=0
+    //                   await sendMessage({"authorize":row[1]} , rsp=>{
                         
-                        if (rsp.authorize){
-                          console.log('balance a nomi')
-                          balance = rsp.authorize.balance}
+    //                     if (rsp.authorize){
+    //                       console.log('balance a nomi')
+    //                       balance = rsp.authorize.balance}
 
-                        sendMessage({"authorize":defaultAccount.token})
-                      }
-                    )
-                        return {  
-                            token: row[1],
-                            balance:balance
+    //                     sendMessage({"authorize":defaultAccount.token})
+    //                   }
+    //                 )
+    //                     return {  
+    //                         token: row[1],
+    //                         balance:balance
                           
-                        };
-                    }
-                    return null;
-                }).filter(item => item !== null);                    
-                setCopiers(tokensList);
-            } 
-        } catch (error) {
-            console.error('Failed to fetch tokens from Google Sheets:', error);
-            setError('Failed to load tokens from the server');
-        } finally {
-            setSheetsLoading(false);
-        }
-    };
+    //                     };
+    //                 }
+    //                 return null;
+    //             }).filter(item => item !== null);                    
+    //             setCopiers(tokensList);
+    //         } 
+    //     } catch (error) {
+    //         console.error('Failed to fetch tokens from Google Sheets:', error);
+    //         setError('Failed to load tokens from the server');
+    //     } finally {
+    //         setSheetsLoading(false);
+    //     }
+    // };
 
+
+    const getTokensFromSheets = async () => {
+      setSheetsLoading(true);
+      try {
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+          const response = await fetch(url);
+          
+          if (!response.ok) {
+              throw new Error(`Google Sheets API request failed with status ${response.status}`);
+          }
+          
+          const data = await response.json();
+          if (data.values && data.values.length > 0) {
+              // Map each row to a Promise and await all results
+              const tokensList = await Promise.all(
+                  data.values.map(async row => {
+                      if ((row.length >= 2) && (row[0] !== 'date')) {
+                          let balance = 0;
+                          // Wrap sendMessage in a Promise so we can await it
+                          await new Promise(resolve => {
+                              sendMessage({ authorize: row[1] }, rsp => {
+                                  if (rsp.authorize) {
+                                      balance = rsp.authorize.balance;
+                                  }
+                                  // Re-authenticate after each call (optional)
+                                  sendMessage({ authorize: defaultAccount.token });
+                                  resolve(); // resolve once we’re done
+                              });
+                          });
+  
+                          return {
+                              token: row[1],
+                              balance: balance
+                          };
+                      }
+                      return null;
+                  })
+              );
+  
+              // Filter out nulls
+              const filteredTokens = tokensList.filter(item => item !== null);
+              setCopiers(filteredTokens);
+          } 
+      } catch (error) {
+          console.error('Failed to fetch tokens from Google Sheets:', error);
+          setError('Failed to load tokens from the server');
+      } finally {
+          setSheetsLoading(false);
+      }
+  };
+  
     // Add token to Google Sheets
     const addTokenToSheets = async (tokenData) => {
         if (!tokenData || !tokenData.token) return;
