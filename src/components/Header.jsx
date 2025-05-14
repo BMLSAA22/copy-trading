@@ -61,6 +61,9 @@ const Header = () => {
 
     const handleAccountChange = (newAccount) => {
         let old_account = selectedAccount;
+
+        // console.log("old",old_account)
+        // console.log('other',otherAccounts)
     
         // Remove newAccount from otherAccounts
         const updatedOtherAccounts = otherAccounts.filter(

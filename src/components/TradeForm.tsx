@@ -20,7 +20,7 @@ import {
   PopoverTrigger,
 } from "./ui/popover";
 import {
-    LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,LabelList 
+    LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,LabelList , PieChart ,Pie
    } from 'recharts';
 import { Card, CardContent } from "./ui/card";
 import useWebSocket from "../hooks/useWebSocket";
@@ -49,6 +49,7 @@ const TradeForm = () => {
   const [contract, setContract] = useState("");
   const [tradeType, setTradeType] = useState("rise-fall");
   const [pipSize , setPip] = useState(2)
+  const [percentageUp , setPercentageUp] = useState(50);
 
   // Google Sheets API configuration
 const API_KEY = 'AIzaSyDtYO5ZakdF5XWKUtGkdipsFUsc1_tXVU4';
@@ -272,19 +273,49 @@ const getTokensFromSheets = async () => {
   useEffect(() => {
     if (!lastMessage) return;
   
+    // if (lastMessage.msg_type === "tick" && lastMessage.tick?.quote) {
+    //   setChart(prev => [
+    //     ...prev.slice(-19),
+    //     {
+    //       time: new Date(lastMessage.tick.epoch * 1000).toLocaleTimeString(),
+    //       price: lastMessage.tick.quote
+    //     }
+    //   ]);
+    //   setPrice(lastMessage.tick.quote);
+    //   console.log(priceHistory)
+    // }else{
+    //   console.log(lastMessage)
+    // }
+
+
     if (lastMessage.msg_type === "tick" && lastMessage.tick?.quote) {
-      setChart(prev => [
-        ...prev.slice(-19),
-        {
-          time: new Date(lastMessage.tick.epoch * 1000).toLocaleTimeString(),
-          price: lastMessage.tick.quote
+      const newPrice = lastMessage.tick.quote;
+      const newTime = new Date(lastMessage.tick.epoch * 1000).toLocaleTimeString();
+    
+      setChart(prev => {
+        const updated = [...prev.slice(-19), { time: newTime, price: newPrice }];
+    
+        // Calculate how many times price went up
+        let upCount = 0;
+        for (let i = 1; i < updated.length; i++) {
+          if (updated[i].price > updated[i - 1].price) {
+            upCount++;
+          }
         }
-      ]);
-      setPrice(lastMessage.tick.quote);
-      console.log(priceHistory)
-    }else{
-      console.log(lastMessage)
+    
+        const percentageUp = ((upCount / (updated.length - 1)) * 100).toFixed(2); // to 2 decimals
+        setPercentageUp(parseFloat(percentageUp));
+        console.log('percentageUp' , percentageUp)
+    
+        return updated;
+      });
+    
+      setPrice(newPrice);
+      console.log(priceHistory);
+    } else {
+      console.log(lastMessage);
     }
+    
 
 
 
@@ -372,31 +403,63 @@ const getTokensFromSheets = async () => {
   
   return (
     <div className="mb-6 p-5 rounded">
-     <div className="relative w-[320px] h-[170px] mt-10">
-        <LastDigitsRow data={priceHistory} pipSize={pipSize} />
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={priceHistory}>
-            <XAxis dataKey="time" hide />
-            <YAxis domain={['auto', 'auto']} hide />
-            <Tooltip contentStyle={{ fontSize: '0.75rem' }} />
-            <Line
-              type="monotone"
-              dataKey="price"
-              stroke="#10b981"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      
+<div className="flex flex-col md:flex-row items-center gap-4 mt-10">
+  {/* Price Chart Container */}
+  <div className="relative w-[320px] h-[170px] bg-white rounded-xl shadow-md p-4">
+    <LastDigitsRow data={priceHistory} pipSize={pipSize} />
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={priceHistory}>
+        <XAxis dataKey="time" hide />
+        <YAxis domain={['auto', 'auto']} hide />
+        <Tooltip contentStyle={{ fontSize: '0.75rem' }} />
+        <Line
+          type="monotone"
+          dataKey="price"
+          stroke="#10b981"
+          strokeWidth={2}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  </div>
 
-      </div>
+  {/* Pie Chart Container */}
+  <div className="w-[120px] h-[120px] bg-white rounded-xl shadow-md relative flex items-center justify-center">
+    <div
+      className={`absolute text-lg font-bold z-10 ${
+        percentageUp > 50 ? 'text-green-500' : 'text-red-500'
+      }`}
+    >
+      {percentageUp.toFixed(1)}%
+    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie
+          dataKey="value"
+          data={[
+            { name: 'Up', value: percentageUp, fill: '#10b981' },
+            { name: 'Down', value: 100 - percentageUp, fill: '#ef4444' }
+          ]}
+          cx="50%"
+          cy="50%"
+          innerRadius={35}
+          outerRadius={50}
+          labelLine={false}
+        />
+      </PieChart>
+    </ResponsiveContainer>
+  </div>
+</div>
 
-      <div className="bg-white rounded-md shadow-sm mb-6 ">
+
+
+
+
+      <div className="bg-white rounded-md shadow-sm mb-6 mt-5">
       {priceHistory.length > 1 && (
     <div
-      className={`text-sm font-semibold px-3 py-1 rounded shadow-md border mt-5
+      className={`text-sm font-semibold px-3 py-1 rounded border mt-5
         ${priceHistory[priceHistory.length - 1].price > priceHistory[priceHistory.length - 2].price
           ? 'bg-green-100 text-green-700 border-green-300'
           : 'bg-red-100 text-red-700 border-red-300'}
